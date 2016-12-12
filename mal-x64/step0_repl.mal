@@ -1,0 +1,8 @@
+(println "section .text")
+(println "global _start")
+(println)
+(println "_start:")
+(println "    mov rdi, 42")
+(println "    mov rax, 60 ; sys_ext")
+(println "    syscall")
+

@@ -74,6 +74,7 @@ lua/linenoise.so
 lua/mal.lua
 make/mal.mk
 mal/mal.mal
+mal-x64/*.asm
 miniMAL/mal.json
 nim/nimcache*
 objc/*.d
