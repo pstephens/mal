@@ -5,13 +5,32 @@
 ; fragment ->  (elem*) | [elem*]
 ; elem ->      (elem*) |
 ;              'label |
-;              [prefix? instr operand*]
-; prefix ->    :prefix-instr                     ; must be one of the acceptable prefix instructions. I.e. :repne
+;              ['label? instr operand*]
 ; instr ->     :instr                            ; must be a valid intel/nasm syntax instruction. I.e. :mov
-; operand ->   12345 |                           ; a number
+; operand ->   expr
+; expr ->      12345 |                           ; a number
 ;              "str" |                           ; a string
-;              :literal                          ; a literal. I.e. :rax
-;              'label                            ; a symbolic label
+;              :literal |                        ; a literal. I.e. :rax
+;              'label |                          ; a symbolic label
+;              (or expr expr ...) |              ; bitwise or
+;              (xor expr expr ...) |             ; bitwise xor
+;              (and expr expr ...) |             ; bitwise and
+;              (shiftl expr1 expr2) |            ; bit shifts expr1 to the left
+;              (shiftr expr1 expr2) |            ; bit shifts expr1 to the right
+;              (+ expr expr ...) |               ; addition
+;              (- expr1 expr2) |                 ; subtracts expr2 from expr1
+;              (- expr) |                        ; negates expr
+;              (* expr expr ...) |               ; multiplication
+;              (/ expr1 expr2 ...) |             ; unsigned divides expr1 by expr2
+;              (// expr1 expr2 ...) |            ; signed divides expr1 by expr2
+;              (% expr1 expr2 ...) |             ; unsigned modulo of expr1 by expr2
+;              (%% expr1 expr2 ...) |            ; signed modulo of expr1 by expr2
+;              (ones-complement expr) |          ; ones complement
+;              (! expr)                          ; logical negation
+;
+; NOTES:
+; 1. Difference between a standalone label symbol and one that starts the vector is label is rendered inline.
+;    Some NASM syntax requires inline labeling.
 
 ; print-asm! - convert the x64 asm data to nasm assembly syntax
 (def! print-asm!
@@ -24,56 +43,123 @@
             (print-asm! (rest fragment)))
         elem
           (do
-            (print-nasm-line! elem)
+            (nasm-print-line! elem)
             (print-asm! (rest fragment)))))))
 
-(def! asm-prefix-instructions
-  {:lock true
-   :rep true
-   :repe true
-   :repne true
-   :repnz true
-   :repz true})
-
-(def! asm-directives
+(def! nasm-directives
   {:section true
    :global true
    :extern true})
 
-(def! asm-directive?
+(def! nasm-directive?
   (fn* [kw]
-    (if (get asm-directives kw) true false)))
+    (if (get nasm-directives kw) true false)))
 
-(def! format-nasm-keyword
+(def! nasm-format-keyword
   (fn* [kw]
     (substr2 (str kw) 1)))
 
-(def! format-nasm-vec
-  (fn* [line]
-    (let* [f         (first line)
-           directive (asm-directive? f)
-           indent    (if directive "" "  ")]
+; key is compound string: "symbol:arity"
+; value is compound vec: [precedence rendered-string]
+(def! nasm-expr-ops
+  {"or:bin"             [1 "|"]
+   "xor:bin"            [2 "^"]
+   "and:bin"            [3 "&"]
+   "shiftl:bin"         [4 "<<"]
+   "shiftr:bin"         [4 ">>"]
+   "+:bin"              [5 "+"]
+   "-:bin"              [5 "-"]
+   "*:bin"              [6 "*"]
+   "/:bin"              [6 "/"]
+   "//:bin"             [6 "//"]
+   "%:bin"              [6 "%"]
+   "%%:bin"             [6 "%%"]
+   "+:un"               [7 "+"]
+   "-:un"               [7 "-"]
+   "ones-complement:un" [7 "~"]
+   "!:un"               [7 "!"]})
+
+(def! nasm-get-func-arity
+  (fn* [expr]
+    (let* [argcount (- (count expr) 1)]
+      (cond
+        (= argcount 1) :un
+        (> argcount 1) :bin
+        (throw (str "Functions must have at least one argument." (pr-str expr)))))))
+
+(def! nasm-get-func-data
+  (fn* [name arity]
+    (or
+      (get nasm-expr-ops (str name arity))
+      (throw (str "Unexpected nasm func: " name arity ".")))))
+
+(def! nasm-calc-expr-precedence
+  (fn* [expr]
+    (cond
+      (list? expr)
+        (let* [arity (nasm-get-func-arity expr)
+               name (first expr)
+               data (nasm-get-func-data name arity)]
+          (nth data 0))
+      true 8)))
+
+(def! nasm-format-func
+  (fn* [expr parent-precedence]
+    (let* [arity (nasm-get-func-arity expr)
+           name (first expr)
+           args (rest expr)
+           data (nasm-get-func-data name arity)
+           precedence (nth data 0)
+           symb (nth data 1)
+           needs-parens (< precedence parent-precedence)
+           sub-expr-fn
+             (fn* [expr]
+               (nasm-format-expr expr precedence))]
       (str
+        (if needs-parens "(" "")
+        (cond
+          (= arity :un) (str symb (sub-expr-fn (first args)))
+          (= arity :bin) (joinstr (str " " symb " ") (map sub-expr-fn args)))
+        (if needs-parens ")" "")))))
+
+; transform lispy prefix notation into nasm's infix notation
+(def! nasm-format-expr
+  (fn* [expr parent-precedence]
+    (cond
+      (list? expr) (nasm-format-func expr parent-precedence)
+      (keyword? expr) (nasm-format-keyword expr) ; trim off first character of keyword
+      (string? expr) (str "\"" expr "\"")
+      true expr)))
+
+(def! nasm-format-vec
+  (fn* [line]
+    (let* [opcode    (first line)
+           line      (rest line)
+           label     (if (symbol? opcode) opcode nil)
+           opcode    (if label (first line) opcode) ; if the first elem is a label then shift opcode and line
+           line      (if label (rest line) line)
+           directive (nasm-directive? opcode)
+           indent    (cond directive ""
+                           label " "
+                           true "  ")]
+      (str
+        (if label (str label ":") "")
         indent
-        (format-nasm-keyword (first line))
+        (nasm-format-keyword opcode)
         " "
         (joinstr ", "
           (map
-            (fn* [tok]
-              (cond
-                (keyword? tok) (format-nasm-keyword tok) ; trim off first character of keyword
-                (string? tok) (str "\"" tok "\"")
-                true tok))
-            (rest line)))))))
+            (fn* [expr] (nasm-format-expr expr 0))
+            line))))))
 
-(def! format-nasm-line
+(def! nasm-format-line
   (fn* [line]
     (cond
       (symbol? line) (str line ":")
-      (vector? line) (format-nasm-vec line)
-      true (throw "Unexpected asm token"))))
+      (vector? line) (nasm-format-vec line)
+      true (throw "Unexpected asm line tokens"))))
 
-(def! print-nasm-line!
+(def! nasm-print-line!
   (fn* [line]
     (do
-      (println (format-nasm-line line)))))
+      (println (nasm-format-line line)))))

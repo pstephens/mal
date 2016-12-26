@@ -2,14 +2,14 @@
   (fn* []
     (list
       [:section '.data]
-      '_heap_start [:dq 0]
-      '_heap_cur [:dq 0]
-      '_heap_len [:dq 0]
+      ['_heap_start :dq 0]
+      ['_heap_cur :dq 0]
+      ['_heap_len :dq 0]
       ; 6GB.
       ; We don't want to churn on virtual memory, and initially we don't free any memory.
       ; So, kill process when heap limit is exceeded.
       ; TODO: Remove after GC is implemented and/or make this CLI driven
-      '_heap_max [:dq 6442450944])))
+      ['_heap_max :equ 6442450944])))
 
 (def! heap-obj-type-enums
   {:bool          0

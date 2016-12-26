@@ -13,7 +13,7 @@
         sym-header
         [:db (heap-obj-type-enum :builtin-func)]
         [:db 0 0 0]
-        [:dd 0] ; TODO: fill this in with padded func length
+        [:dd `(- ~sym-suffix ~sym-entry)]
 
         sym-entry
         (bodyfn {})
