@@ -1,15 +1,20 @@
 (load-file "funcs.mal")
+(load-file "heap.mal")
 (load-file "nasm.mal")
+(load-file "x64.mal")
 
-(def! _start
+(def! bootstrap-asm
+  (fn* []
+    (list
+      [:section '.text]
+      [:global '_start]
+
+      '_start
+      [:mov :rdi 44]
+      [:mov :rax 60]
+      [:syscall])))
+
+(print-asm!
   (list
-    [:section '.text]
-    [:global '_start]
-
-    '_start
-    [:mov :rdi 44]
-    [:mov :rax 60]
-    [:syscall]))
-
-
-(print-asm! _start)
+    (bootstrap-asm)
+    (heap-asm)))

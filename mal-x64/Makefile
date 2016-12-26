@@ -6,7 +6,7 @@ TESTS =
 
 OTHER_OBJS =
 
-SOURCES_BASE = 
+SOURCES_BASE = funcs.mal heap.mal nasm.mal x64.mal
 SOURCES_LISP = 
 SOURCES = $(SOURCES_BASE) $(SOURCES_LISP)
 

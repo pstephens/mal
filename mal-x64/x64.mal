@@ -1,0 +1,25 @@
+; x64-mk-func - wrap assembly data with stackframe setup and teardown
+(def! x64-mk-func
+  (fn* [name opts bodyfn]
+    (let* [namestr (str name)
+           sym-entry (symbol namestr)
+           sym-header (symbol (str namestr "$$hdr"))
+           sym-exit (symbol (str namestr "$$exit"))
+           sym-suffix (symbol (str namestr "$$suffix"))]
+      (list
+        [:section '.text]
+
+        [:align 8]
+        sym-header
+        [:db (heap-obj-type-enum :builtin-func)]
+        [:db 0 0 0]
+        [:dd 0] ; TODO: fill this in with padded func length
+
+        sym-entry
+        (bodyfn {})
+
+        sym-exit
+        [:ret]
+
+        [:align 8]
+        sym-suffix))))

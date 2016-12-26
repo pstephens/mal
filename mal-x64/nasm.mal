@@ -15,12 +15,17 @@
 
 ; print-asm! - convert the x64 asm data to nasm assembly syntax
 (def! print-asm!
-  (fn* [instructions]
-    (let* [line (first instructions)]
-      (if line
-        (do
-          (print-nasm-line! line)
-          (print-asm! (rest instructions)))))))
+  (fn* [fragment]
+    (let* [elem (first fragment)]
+      (cond
+        (list? elem)
+          (do
+            (print-asm! elem)
+            (print-asm! (rest fragment)))
+        elem
+          (do
+            (print-nasm-line! elem)
+            (print-asm! (rest fragment)))))))
 
 (def! asm-prefix-instructions
   {:lock true
