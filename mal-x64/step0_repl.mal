@@ -1,96 +1,15 @@
+(load-file "funcs.mal")
+(load-file "nasm.mal")
 
-(def! reverse
-  (fn* [items]
-    (reverse* items '())))
-
-(def! reverse*
-  (fn* [items acc]
-    (let* [x (first items)]
-      (if x
-        (reverse* (rest items) (cons x acc))
-        acc))))
-
-(def! substr1
-  (fn* [str idx]
-    (substr* '() (seq str) idx 2147483647)))
-
-(def! substr2
-  (fn* [str idx len]
-    (substr* '() (seq str) idx len)))
-
-(def! substr*
-  (fn* [acc chars skip take]
-    (let* [h (first chars)
-           t (rest chars)]
-      (cond
-        (not h) (apply str (reverse acc))
-        (> skip 0) (substr* acc t (- skip 1) take)
-        (> take 0) (substr* (cons h acc) t 0 (- take 1))
-        true (apply str (reverse acc))))))
-
-(def! joinstr
-  (fn* [sep lst]
-    (joinstr* sep lst '())))
-
-(def! joinstr*
-  (fn* [sep lst acc]
-    (let* [h (first lst)
-           t (rest lst)]
-      (if h
-        (if (empty? acc)
-          (joinstr* sep t (cons h acc))
-          (joinstr* sep t (cons h (cons sep acc))))
-        (apply str (reverse acc))))))
-
-(def! format-nasm-keyword
-  (fn* [kw]
-    (substr1 (str kw) 1)))
-
-(def! format-nasm-vec
-  (fn* [line]
-    (str
-      "  "
-      (format-nasm-keyword (first line))
-      " "
-      (joinstr ", "
-        (map
-          (fn* [tok]
-            (cond
-              (keyword? tok) (format-nasm-keyword tok) ; trim off first character of keyword
-              true tok))
-          (rest line))))))
-
-(def! format-nasm-line
-  (fn* [line]
-    (cond
-      (symbol? line) (str line ":")
-      (vector? line) (format-nasm-vec line)
-      true (throw "Unexpected asm token"))))
-
-(def! print-nasm-line
-  (fn* [line]
-    (println (format-nasm-line line))))
-
-; implement a DSL to convert data to nasm
-(def! asm->nasm!
-  (fn* [instr]
-    (let* [line (first instr)]
-      (if line
-        (do
-          (print-nasm-line line)
-          (asm->nasm! (rest instr)))))))
-
-(def! print-nasm-setup!
-  (fn* []
-    (do
-      (println "section .text")
-      (println "global _start"))))
-
-(print-nasm-setup!)
-
-(asm->nasm!
+(def! _start
   (list
+    [:section '.text]
+    [:global '_start]
+
     '_start
-    [:mov :rdi 42]
+    [:mov :rdi 44]
     [:mov :rax 60]
     [:syscall]))
+
+
+(print-asm! _start)

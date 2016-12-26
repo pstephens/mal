@@ -1,0 +1,50 @@
+; reverse - reverse the elements of a list
+(def! reverse
+  (fn* [items]
+    (reverse* items '())))
+
+(def! reverse*
+  (fn* [items acc]
+    (let* [x (first items)]
+      (if x
+        (reverse* (rest items) (cons x acc))
+        acc))))
+
+; substr2 or substr3 - get the subset of a string
+; two arities:
+;  str skip     - return subset of str by skipping idx chars
+;  str skip len - return subset of str by skipping idx chars and then taking len chars
+; If idx exceeds the length of the string then the empty string is returned
+; If idx + len exceeds the length of the string then this call is equivalent to (substr3 s skip)
+(def! substr2
+  (fn* [str skip]
+    (substr* '() (seq str) skip 3000000000)))
+
+(def! substr3
+  (fn* [str skip len]
+    (substr* '() (seq str) skip len)))
+
+(def! substr*
+  (fn* [acc chars skip len]
+    (let* [h (first chars)
+           t (rest chars)]
+      (cond
+        (not h) (apply str (reverse acc))
+        (> skip 0) (substr* acc t (- skip 1) len)
+        (> len 0) (substr* (cons h acc) t 0 (- len 1))
+        true (apply str (reverse acc))))))
+
+; joinstr - concatenates a list together using a seperator string
+(def! joinstr
+  (fn* [sep lst]
+    (joinstr* sep lst '())))
+
+(def! joinstr*
+  (fn* [sep lst acc]
+    (let* [h (first lst)
+           t (rest lst)]
+      (if h
+        (if (empty? acc)
+          (joinstr* sep t (cons h acc))
+          (joinstr* sep t (cons h (cons sep acc))))
+        (apply str (reverse acc))))))

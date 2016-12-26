@@ -4,6 +4,8 @@ DEBUG =
 
 TESTS =
 
+OTHER_OBJS =
+
 SOURCES_BASE = 
 SOURCES_LISP = 
 SOURCES = $(SOURCES_BASE) $(SOURCES_LISP)
@@ -34,7 +36,7 @@ $(BINS): %: %.o
 	ld -e _start -o $@ $(@:%=%.o)
 
 clean:
-	rm -f mal $(ASMS) $(OBJS) $(BINS)
+	rm -f mal $(ASMS) $(OBJS) $(BINS) $(OTHER_OBJS)
 
 .PHONY: stats tests $(TESTS)
 

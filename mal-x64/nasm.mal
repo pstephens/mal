@@ -1,0 +1,74 @@
+; The assembly data "dsl":
+; Fragments of x64 assembly data are passed to print-asm! to render to stdout.
+; The language is made up of mal data structures and works as follows:
+; 
+; fragment ->  (elem*) | [elem*]
+; elem ->      (elem*) |
+;              'label |
+;              [prefix? instr operand*]
+; prefix ->    :prefix-instr                     ; must be one of the acceptable prefix instructions. I.e. :repne
+; instr ->     :instr                            ; must be a valid intel/nasm syntax instruction. I.e. :mov
+; operand ->   12345 |                           ; a number
+;              "str" |                           ; a string
+;              :literal                          ; a literal. I.e. :rax
+;              'label                            ; a symbolic label
+
+; print-asm! - convert the x64 asm data to nasm assembly syntax
+(def! print-asm!
+  (fn* [instructions]
+    (let* [line (first instructions)]
+      (if line
+        (do
+          (print-nasm-line! line)
+          (print-asm! (rest instructions)))))))
+
+(def! asm-prefix-instructions
+  {:lock true
+   :rep true
+   :repe true
+   :repne true
+   :repnz true
+   :repz true})
+
+(def! asm-directives
+  {:section true
+   :global true
+   :extern true})
+
+(def! asm-directive?
+  (fn* [kw]
+    (if (get asm-directives kw) true false)))
+
+(def! format-nasm-keyword
+  (fn* [kw]
+    (substr2 (str kw) 1)))
+
+(def! format-nasm-vec
+  (fn* [line]
+    (let* [f         (first line)
+           directive (asm-directive? f)
+           indent    (if directive "" "  ")]
+      (str
+        indent
+        (format-nasm-keyword (first line))
+        " "
+        (joinstr ", "
+          (map
+            (fn* [tok]
+              (cond
+                (keyword? tok) (format-nasm-keyword tok) ; trim off first character of keyword
+                (string? tok) (str "\"" tok "\"")
+                true tok))
+            (rest line)))))))
+
+(def! format-nasm-line
+  (fn* [line]
+    (cond
+      (symbol? line) (str line ":")
+      (vector? line) (format-nasm-vec line)
+      true (throw "Unexpected asm token"))))
+
+(def! print-nasm-line!
+  (fn* [line]
+    (do
+      (println (format-nasm-line line)))))

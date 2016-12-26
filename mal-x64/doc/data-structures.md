@@ -7,27 +7,29 @@ All non byte primitives are stored in little endian format per x64 requirements.
 ## Definitions
 |Name|Definition|
 |----|----------|
+|OBJECT|A single entity in the heap. Includes bytes for the header, payload, and suffix.|
 |BYTE|An 8 bit value|
 |WORD|2 BYTES|
 |DWORD|4 BYTES|
 |QWORD|8 BYTES|
 |Reference|All references are 64 bit pointers into the process address space.
 
-## Data Structures
-All structures are peristent with the exception of Atom. All structures are non-recursive
-except for Atom which allows for cycles in the heap graph.
+## OBJECTS
+All OBJECTS are effectively immutable with the exception of Atom. All OBJECTS are
+non-recursive except for the Atom which allows for cycles in the heap graph.
 
-All data structures are aligned on 8 byte boundaries per x64 performance best practices.
+All OBJECTS have 8 byte alignment per x64 performance guidance.
 
-Each data structure object will be divided into the header and the payload. The header will
-be at least 8 bytes followed by 0 or more bytes for the payload.
+Each OBJECT will be divided into the header, the payload, and the optional
+suffix. The header will be exactly 8 bytes, followed by the payload, and then the
+suffix. The total bytes for the OBJECT must be calculated from the header.
 
 ## References
-All data references point to the start of the payload. The header precedes the payload within
-the process address space.
+All OBJECT references point to the start of the payload. The header precedes the payload
+within the process address space.
 
 ## Header
-The header contains the type tag as well as other metadata. The minimal header is 8 bytes and
+The header contains the type tag as well as other metadata. The header is exactly 8 bytes and
 is laid out as follows:
 
 |Offset|x64 Type|Description|
@@ -36,7 +38,7 @@ is laid out as follows:
 |-7|BYTE|Flags|
 |-6 to -1|*|Six bytes are reserved for use by the data type.|
 
-The header should be sufficient to calculate the total space in use by the data structure.
+The header is sufficient to calculate the total bytes used by the OBJECT.
 
 ### Data Type Tags
 |Type|Description|
@@ -90,12 +92,14 @@ The combined offset and length cannot exceed the referenced string's length.
 Symbols are a subtype of string and have the same mechanics but different semantics.
 
 ### Keyword
-Symbols are a subtype of string and have the same mechanics but different semantics.
+Keywords are a subtype of string and have the same mechanics but different semantics.
 
 ### Cons Cell (List)
-The cons cell forms the foundation for the linked list. It is made up two components, the
-`car` which is a reference to the data and `cdr` which is a reference to the rest of the
-list or Nil if there no more elements. The empty list and Nil are equivalent.
+The cons cell provides the foundation for the linked list. It is made up two components: the
+`car` which is a reference to the data and `cdr` which is a reference to the next cons cell
+in the list. The final cons cell in the list is special and has a Nil reference for both
+`car` and `cdr`. All `cdr` values must reference either another cons cell or Nil; no other
+reference type is allowed. `car` may reference any valid type.
 
 |Offset|x64 Type|Description|
 |------|--------|-----------|
