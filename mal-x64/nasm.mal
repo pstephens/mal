@@ -59,6 +59,7 @@
   (fn* [kw]
     (substr2 (str kw) 1)))
 
+; These operators roughly follow nasm syntax but are changed when was a conflict (i.e. ~)
 ; key is compound string: "symbol:arity"
 ; value is compound vec: [precedence rendered-string]
 (def! nasm-expr-ops

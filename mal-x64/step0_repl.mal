@@ -2,6 +2,7 @@
 (load-file "heap.mal")
 (load-file "nasm.mal")
 (load-file "x64.mal")
+(load-file "syscall.mal")
 
 (def! bootstrap-asm
   (fn* []
@@ -10,11 +11,31 @@
       [:global '_start]
 
       '_start
-      [:mov :rdi 44]
+      [:call '_hello_world]
+      ; Exit with error code 42
+      [:mov :rdi 42]
       [:mov :rax 60]
       [:syscall])))
+
+(def! hello-asm
+  (fn* []
+    (list
+      [:section '.data]
+      ['helloworld :db "Hello, World!" 10]
+      ['helloworld$len :equ '(- $ helloworld)]
+      (x64-mk-func
+        '_hello_world
+        {}
+        (fn* [st]
+          (list
+            [:mov :rdi 1] ; stdout
+            [:mov :rsi 'helloworld]
+            [:mov :rdx 'helloworld$len]
+            [:call '_sys_write]))))))
 
 (print-asm!
   (list
     (bootstrap-asm)
-    (heap-asm)))
+    (heap-asm)
+    (syscall-asm)
+    (hello-asm)))

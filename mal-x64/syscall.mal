@@ -1,0 +1,16 @@
+(def! sys-write-asm
+  (fn* []
+    (x64-mk-func
+      '_sys_write
+      {}
+      (fn* [st]
+        (list
+          [:mov :rax 1]
+          [:syscall]
+          ; TODO: Check error code, someday throw an exception if failure.
+          [:mov :rax 0])))))
+
+(def! syscall-asm
+  (fn* []
+    (list
+      (sys-write-asm))))

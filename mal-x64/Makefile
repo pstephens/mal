@@ -6,7 +6,7 @@ TESTS =
 
 OTHER_OBJS =
 
-SOURCES_BASE = funcs.mal heap.mal nasm.mal x64.mal
+SOURCES_BASE = funcs.mal heap.mal nasm.mal syscall.mal x64.mal
 SOURCES_LISP = 
 SOURCES = $(SOURCES_BASE) $(SOURCES_LISP)
 
@@ -33,7 +33,7 @@ $(OBJS): %.o: %.asm
 	nasm -f elf64 -o $@ $(@:%.o=%.asm)
 
 $(BINS): %: %.o
-	ld -e _start -o $@ $(@:%=%.o)
+	ld -e _start -O1 -o $@ $(@:%=%.o)
 
 clean:
 	rm -f mal $(ASMS) $(OBJS) $(BINS) $(OTHER_OBJS)
