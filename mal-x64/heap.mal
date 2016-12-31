@@ -1,16 +1,3 @@
-(def! heap-data-asm
-  (fn* []
-    (list
-      [:section '.data]
-      ['_heap_start :dq 0]
-      ['_heap_cur :dq 0]
-      ['_heap_len :dq 0]
-      ; 6GB.
-      ; We don't want to churn on virtual memory, and initially we don't free any memory.
-      ; So, kill process when heap limit is exceeded.
-      ; TODO: Remove after GC is implemented and/or make this CLI driven
-      ['_heap_max :equ 6442450944])))
-
 (def! heap-obj-type-enums
   {:bool          0
    :number        1
@@ -36,17 +23,18 @@
         num
         (throw (str "Invalid type name " kw "."))))))
 
-(def! heap-init-asm
-  (fn* []
-    (x64-mk-func
-      '_heap_init
-      {}
-      (fn* [st]
-        (list
-          [:mov :rax 22])))))
+(emit-x64!
+  [:section .data]
+  [_heap_start :dq 0]
+  [_heap_cur :dq 0]
+  [_heap_len :dq 0]
+  ; 6GB.
+  ; We don't want to churn on virtual memory, and initially we don't free any memory.
+  ; So, kill process when heap limit is exceeded.
+  ; TODO: Remove after GC is implemented and/or make this CLI driven
+  [_heap_max :equ (* 6 1024 1024 1024)])
 
-(def! heap-asm
-  (fn* []
-    (list
-      (heap-data-asm)
-      (heap-init-asm))))
+(emit-x64-func!
+  _heap_init
+  (body
+    [:mov :rax 22]))

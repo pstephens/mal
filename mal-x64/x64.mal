@@ -1,11 +1,11 @@
-; x64-mk-func - wrap assembly data with stackframe setup and teardown
-(def! x64-mk-func
+; x64-mk-func - wrap func body with stackframe setup and teardown
+(def! x64-mk-func*
   (fn* [name opts bodyfn]
     (let* [namestr (str name)
            sym-entry (symbol namestr)
-           sym-header (symbol (str namestr "$$hdr"))
-           sym-exit (symbol (str namestr "$$exit"))
-           sym-suffix (symbol (str namestr "$$suffix"))]
+           sym-header (symbol (str namestr "..hdr"))
+           sym-exit (symbol (str namestr "..exit"))
+           sym-suffix (symbol (str namestr "..suffix"))]
       (list
         [:section '.text]
 
@@ -23,3 +23,47 @@
 
         [:align 8]
         sym-suffix))))
+
+(def! x64-collect-mk-func-opts*
+  (fn* [acc xs]
+    (if (empty? xs)
+      acc
+      (let* [t0 (first xs)
+             tr (rest xs)]
+        (cond
+          ; handle key value pairs
+          (keyword? t0)
+            (if (empty? tr)
+              (throw (str "Expected value after keyword " t0))
+              (x64-collect-mk-func-opts* (assoc acc t0 (first tr)) (rest tr)))
+          ; handle list based clauses
+          (list? t0)
+            (let* [b0 (first t0)]
+              (cond
+                (= 'body b0) (x64-collect-mk-func-opts* (assoc acc :body (rest t0)) tr)
+                true (throw (str "Invalid clause. " (pr-str b0)))))
+          true (throw (str "Invalid clause. " (pr-str t0))))))))
+
+(defmacro! emit-x64!
+  (fn* [& xs]
+    (list 'print-asm! (quasiquote2 xs))))
+
+; emit-x64-func!
+; This macro puts some sugar around creating an x64 function.
+; The macro takes a symbolic function name, then key-values and flags, followed by a (body ...) clause.
+; The key-values are pairs of :key value
+; The flags are special keys that are recognized as flags.
+; The body should produce a list of assembler statements.
+(defmacro! emit-x64-func!
+  (fn* [& xs]
+    (let* [name (first xs)
+           opts (x64-collect-mk-func-opts* {} (rest xs))
+           body (or (get opts :body) (throw "(body...) is a required for def-x64-func!"))
+           opts (dissoc opts :body)
+           qbody (quasiquote2 body)]
+      (list
+        'print-asm!
+        (list 'x64-mk-func*
+          (list 'quote name)
+          opts
+          (list 'fn* ['opts] qbody))))))

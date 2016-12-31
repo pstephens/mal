@@ -1,3 +1,16 @@
+; and -- logical complement to built in or
+(defmacro! and
+  (fn* (& xs)
+    (if (empty? xs)
+      true
+      (if
+        (= 1 (count xs)) (first xs)
+        (let* [condvar (gensym)]
+          `(let* [~condvar ~(first xs)]
+            (if ~condvar
+              (and ~@(rest xs))
+              ~condvar)))))))
+
 ; reverse - reverse the elements of a list
 (def! reverse
   (fn* [items]
@@ -48,3 +61,30 @@
           (joinstr* sep t (cons h acc))
           (joinstr* sep t (cons h (cons sep acc))))
         (apply str (reverse acc))))))
+
+; quasiquote2 - an improved quasiquote. This one doesn't mangle vectors like the official mal version.
+(def! quasiquote2
+  (fn* [xs]
+    (cond
+      (quasiquote2-unquote? 'unquote xs) (nth xs 1)
+      (quasiquote2-unquote? 'splice-unquote xs) (throw "'splice-unquote' found outside of a list or vector.")
+      (vector? xs) (list 'apply 'vector (quasiquote2-lst* '() (seq xs)))
+      (list? xs) (quasiquote2-lst* '() xs)
+      true (list 'quote xs))))
+
+(def! quasiquote2-unquote?
+  (fn* [symb xs]
+    (if (and (list? xs) (= (first xs) symb))
+      (or (= (count xs) 2) (throw (str "'" symb "' should be arity of one.")))
+      false)))
+
+(def! quasiquote2-lst*
+  (fn* [acc xs]
+    (if (empty? xs)
+      (cons 'concat (reverse acc))
+      (let* [e0 (first xs)
+             en (rest xs)]
+        (cond
+          (quasiquote2-unquote? 'unquote e0) (quasiquote2-lst* (cons (list 'list (nth e0 1)) acc) en)
+          (quasiquote2-unquote? 'splice-unquote e0) (quasiquote2-lst* (cons (nth e0 1) acc) en)
+          true (quasiquote2-lst* (cons (list 'list (quasiquote2 e0)) acc) en))))))

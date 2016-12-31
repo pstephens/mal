@@ -1,7 +1,7 @@
 ; The assembly data "dsl":
 ; Fragments of x64 assembly data are passed to print-asm! to render to stdout.
 ; The language is made up of mal data structures and works as follows:
-; 
+;
 ; fragment ->  (elem*) | [elem*]
 ; elem ->      (elem*) |
 ;              'label |
@@ -92,7 +92,7 @@
   (fn* [name arity]
     (or
       (get nasm-expr-ops (str name arity))
-      (throw (str "Unexpected nasm func: " name arity ".")))))
+      (throw (str "Unexpected asm func: " name arity ".")))))
 
 (def! nasm-calc-expr-precedence
   (fn* [expr]
@@ -162,5 +162,4 @@
 
 (def! nasm-print-line!
   (fn* [line]
-    (do
-      (println (nasm-format-line line)))))
+    (println (nasm-format-line line))))

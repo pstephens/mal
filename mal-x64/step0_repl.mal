@@ -1,41 +1,30 @@
 (load-file "funcs.mal")
-(load-file "heap.mal")
 (load-file "nasm.mal")
 (load-file "x64.mal")
+(load-file "heap.mal")
 (load-file "syscall.mal")
 
-(def! bootstrap-asm
-  (fn* []
-    (list
-      [:section '.text]
-      [:global '_start]
+(emit-x64!
+  [:section .text]
+  [:global _start]
 
-      '_start
-      [:call '_hello_world]
-      ; Exit with error code 42
-      [:mov :rdi 42]
-      [:mov :rax 60]
-      [:syscall])))
+  _start
+  ; Print something to stdout
+  [:call _hello_world]
 
-(def! hello-asm
-  (fn* []
-    (list
-      [:section '.data]
-      ['helloworld :db "Hello, World!" 10]
-      ['helloworld$len :equ '(- $ helloworld)]
-      (x64-mk-func
-        '_hello_world
-        {}
-        (fn* [st]
-          (list
-            [:mov :rdi 1] ; stdout
-            [:mov :rsi 'helloworld]
-            [:mov :rdx 'helloworld$len]
-            [:call '_sys_write]))))))
+  ; Exit with error code 42
+  [:mov :rdi 42]
+  [:mov :rax 60]
+  [:syscall])
 
-(print-asm!
-  (list
-    (bootstrap-asm)
-    (heap-asm)
-    (syscall-asm)
-    (hello-asm)))
+(emit-x64!
+  [:section .data]
+  [helloworld :db "Hello, World!" 10]
+  [helloworld$len :equ (- $ helloworld)])
+
+(emit-x64-func! _hello_world
+  (body
+    [:mov :rdi 1] ; stdout
+    [:mov :rsi helloworld]
+    [:mov :rdx helloworld$len]
+    [:call _sys_write]))
