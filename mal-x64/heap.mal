@@ -27,7 +27,8 @@
   [:section .data]
   [_heap_start :dq 0]
   [_heap_cur :dq 0]
-  [_heap_len :dq 0]
+  [_heap_end :dq 0]
+  [_heap_growth :dq (* 8 1024 1024)]
   ; 6GB.
   ; We don't want to churn on virtual memory, and initially we don't free any memory.
   ; So, kill process when heap limit is exceeded.
@@ -37,4 +38,39 @@
 (emit-x64-func!
   _heap_init
   (body
-    [:mov :rax 22]))
+    ; sys_brk(0) - passing the value 0 will starting break
+    [:mov :rax 12]
+    [:mov :rdi 0]
+    [:syscall]
+
+    ; initialize heap pointers to the starting break
+    [:mov [_heap_start] :rax]
+    [:mov [_heap_cur] :rax]
+    [:mov [_heap_end] :rax]))
+
+; NOTES:
+; Basic heap algorithm:
+;
+; Init:
+; _heap_start = sbrk(0);
+; _heap_cur = _heap_start;
+; _heap_end = _heap_start;
+;
+; _heap_alloc(typeTag, payloadSize, suffixSize)
+;   size_needed = 8 + roundUpTo8(payloadSize) + roundUpTo8(suffixSize)
+;   if(_heap_end - _heap_cur < size_needed)
+;      grow_heap_at_least_to(_heap_cur + size_needed)
+;   obj_ptr = _heap_cur + 8
+;   _heap_cur += size_needed
+;   zero_init everything
+;   [obj_ptr - 8] = typeTag
+;   return obj_ptr
+;
+; set_heap_at_least_to(pos)
+;   if(pos < _heap_start)
+;      pos = _heap_start
+;   minSize = pos - _heap_start
+;   rem = minSize % _heap_growth
+;   if(rem != 0)
+;     pos += _heap_growth - rem
+;   _heap_end = brk(pos)

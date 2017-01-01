@@ -9,6 +9,8 @@
   [:global _start]
 
   _start
+  [:call _heap_init]
+
   ; Print something to stdout
   [:call _hello_world]
 

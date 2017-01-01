@@ -27,6 +27,7 @@
 ;              (%% expr1 expr2 ...) |            ; signed modulo of expr1 by expr2
 ;              (ones-complement expr) |          ; ones complement
 ;              (! expr)                          ; logical negation
+;              [expr]                            ; effective memory address
 ;
 ; NOTES:
 ; 1. Difference between a standalone label symbol and one that starts the vector is label is rendered inline.
@@ -128,6 +129,7 @@
   (fn* [expr parent-precedence]
     (cond
       (list? expr) (nasm-format-func expr parent-precedence)
+      (vector? expr) (str "[" (nasm-format-expr (nth expr 0) 0) "]")
       (keyword? expr) (nasm-format-keyword expr) ; trim off first character of keyword
       (string? expr) (str "\"" expr "\"")
       true expr)))

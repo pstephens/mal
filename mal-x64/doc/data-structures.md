@@ -44,21 +44,21 @@ The header is sufficient to calculate the total bytes used by the OBJECT.
 |Type|Description|
 |----|-----------|
 |0   |Boolean|
-|10  |Number|
-|20  |String|
-|21  |String Span|
-|30  |Symbol|
-|40  |Keyword|
-|50  |Cons Cell|
-|60  |Vector Parent|
-|61  |Vector Span|
-|62  |Vector Leaf|
-|70  |Map Parent|
-|71  |Map Leaf|
-|80  |Atom|
-|90  |Built-in Function|
-|91  |User defined Function|
-|100 |Macro|
+|1   |Number|
+|2   |String|
+|3   |String Span|
+|4   |Symbol|
+|5   |Keyword|
+|6   |Cons Cell|
+|7   |Vector Parent|
+|8   |Vector Span|
+|9   |Vector Leaf|
+|10  |Map Parent|
+|11  |Map Leaf|
+|12  |Atom|
+|13  |Built-in Function|
+|14  |User defined Function|
+|15  |Macro|
 
 ## Details
 ### Nil
