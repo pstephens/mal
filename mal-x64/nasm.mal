@@ -26,7 +26,8 @@
 ;              (% expr1 expr2 ...) |             ; unsigned modulo of expr1 by expr2
 ;              (%% expr1 expr2 ...) |            ; signed modulo of expr1 by expr2
 ;              (ones-complement expr) |          ; ones complement
-;              (! expr)                          ; logical negation
+;              (! expr) |                        ; logical negation
+;              (qword expr) |                    ; the size specifier for the effective memory address (can be byte, word, dword, qword)
 ;              [expr]                            ; effective memory address
 ;
 ; NOTES:
@@ -79,7 +80,11 @@
    "+:un"               [7 "+"]
    "-:un"               [7 "-"]
    "ones-complement:un" [7 "~"]
-   "!:un"               [7 "!"]})
+   "!:un"               [7 "!"]
+   "byte:un"            [7 "byte "]
+   "word:un"            [7 "word "]
+   "dword:un"           [7 "dword "]
+   "qword:un"           [7 "qword "]})
 
 (def! nasm-get-func-arity
   (fn* [expr]

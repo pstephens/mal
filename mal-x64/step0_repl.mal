@@ -9,10 +9,12 @@
   [:global _start]
 
   _start
-  [:call _heap_init]
-
-  ; Print something to stdout
+  ; Print something to stdout - TODO: for testing
   [:call _hello_world]
+
+  ; alloc some memory - TODO: this is for testing.
+  [:mov :rdi 24]
+  [:call _heap_alloc]
 
   ; Exit with error code 42
   [:mov :rdi 42]

@@ -29,24 +29,150 @@
   [_heap_cur :dq 0]
   [_heap_end :dq 0]
   [_heap_growth :dq (* 8 1024 1024)]
-  ; 6GB.
-  ; We don't want to churn on virtual memory, and initially we don't free any memory.
-  ; So, kill process when heap limit is exceeded.
-  ; TODO: Remove after GC is implemented and/or make this CLI driven
-  [_heap_max :equ (* 6 1024 1024 1024)])
+  [_heap_max :dq 0])
 
 (emit-x64-func!
   _heap_init
   (body
-    ; sys_brk(0) - passing the value 0 will starting break
+    ; sys_brk(0); // passing the value 0 will return the initial brk value on linux x64
     [:mov :rax 12]
     [:mov :rdi 0]
     [:syscall]
 
-    ; initialize heap pointers to the starting break
+    ; // initialize heap pointers to the initial brk value
     [:mov [_heap_start] :rax]
     [:mov [_heap_cur] :rax]
+    [:mov [_heap_end] :rax]
+
+    ; // Max heap is 6GB.
+    ; // We don't want to churn on virtual memory, and initially we don't free any memory.
+    ; // So, kill process when heap limit is exceeded.
+    ; // TODO: Remove after GC is implemented and/or make this CLI driven
+    [:mov :rcx (* 6 1024 1024 1024)]
+    [:add :rax :rcx]
+    [:mov [_heap_max] :rax]))
+
+(emit-x64-func!
+  _heap_setbrk
+  ; _heap_setbrk(proposedBrk : int64) : unit
+  ; Description:
+  ;   Increases (or decreases) the heap size by manipulating the brk.
+  ;   Initializes the heap if necessary.
+  ; Parameters:
+  ;   proposedBrk - rdi - the minimum brk to set the heap to. This will be rounded up by a factor of _heap_growth bytes.
+  ; Return:
+  ;   Nothing.
+  (body
+    ; // Calculate brk rounded up to _heap_growth
+    ; rdx = proposedBrk % *_heap_growth;
+    [:mov :rax :rdi]
+    [:xor :rdx :rdx]
+    [:div (qword [_heap_growth])]
+
+    ; rax = proposedBrk;
+    [:mov :rax :rdi]
+
+    ; if(rdx == 0) goto T2;
+    [:cmp :rdx 0]
+    [:jz .T2]
+
+    ; rax += _heap_growth - rdx
+    [:add :rax [_heap_growth]]
+    [:sub :rax :rdx]
+
+    .T2
+    ; TODO: check brk against _heap_max. print error and sys_exit if limit exceeded.
+    ; TODO: Or, throw exception? Might be tricky in low mem situation.
+
+    ; sys_brk(rax);
+    [:push :rax]
+    [:mov :rdi :rax]
+    [:mov :rax 12]
+    [:syscall]
+    [:pop :rax]
+
+    ; TODO: check return code for errors
+
+    ; *_heap_end = rax;
     [:mov [_heap_end] :rax]))
+
+(emit-x64-func!
+  _heap_alloc
+  ; _heap_alloc(size : int64) : int_ptr
+  ; Description:
+  ;   Allocates bytes on the heap. Initializes the memory block to zero.
+  ;   Exits the process if out of memory.
+  ; Parameters:
+  ;   :rdi - number of bytes to allocate.
+  ; Return
+  ;   :rax - pointer to the start of payload.
+  (body
+    ; if(*_heap_cur + size <= *_heap_end) goto T2;
+    ;; // before: rdi = size
+    ;; // after: rdi = size, rdx = *_heap_cur, rax = *_heap_cur + size
+    [:mov :rax [_heap_cur]]
+    [:mov :rdx :rax]
+    [:add :rax :rdi]
+    [:cmp :rax [_heap_end]]
+    [:jbe .T2]
+
+    ; if(*_heap_cur != 0) goto T1; // e.g. heap has already been init'd
+    [:cmp (qword :rdx) 0]
+    [:jne .T1]
+
+    ; _heap_init();
+    [:push :rdi]
+    [:call _heap_init]
+    [:pop :rdi]
+
+    .T1
+    [:push :rdi]
+
+    ; rdi = _heap_cur + size;
+    ; // before: rdi = size
+    ; // after: rdi = *_heap_cur + size
+    [:add rdi [_heap_cur]]
+
+    ; _heap_setbrk(rdi)
+    [:call _heap_setbrk]
+    [:pop :rdi]
+
+    ; // restore rdx, rax
+    ; // after: rdx = *_heap_cur, rax = *_heap_cur + size
+    [:mov :rdx [_heap_cur]]
+    [:mov :rax :rdi]
+    [:add :rax :rdx]
+
+    .T2
+    ; zero out the memory block bounded by _heap_cur and _heap_cur + size (rdx and rax)
+    [:cld]
+    ; rcx = size / 8
+    [:mov :rcx :rdi]
+    [:shr :rcx 3]
+    ; rdi = *_heap_cur
+    [:mov :rdi :rdx]
+    ; rax = 0
+    [:xor :rax :rax]
+    ; // zero memory. Set rcx qwords starting at rdi to rax.
+    ; // after: rdi = *_heap_cur + size
+    [:rep]
+    [:stosq]
+
+    ; *_heap_cur = rdi
+    [:mov [_heap_cur] :rdi]
+
+    ; rax = rdx + 8 // we need to return a pointer to the payload which is 8 bytes after the header.
+    [:mov :rax :rdx]
+    [:add :rax 8]
+
+    ; invariant: _heap_cur + size <= _heap_end
+    ; invariant: _heap_start & 7 == 0
+    ; invariant: _heap_start != 0
+    ; invariant: _heap_cur & 7 == 0
+    ; invariant: _heap_cur >= _heap_start
+    ; invariant: _heap_end & 7 == 0
+    ; invariant: _heap_end >= _heap_cur
+    ))
 
 ; NOTES:
 ; Basic heap algorithm:
