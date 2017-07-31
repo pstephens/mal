@@ -1,9 +1,11 @@
-SOURCES_BASE = src/readline.clj src/reader.clj src/printer.clj
-SOURCES_LISP = src/env.clj src/core.clj src/stepA_mal.clj
-SRCS = $(SOURCES_BASE) src/env.clj src/core.clj
+CLJ_MODE ?= clj
+SOURCES_UTIL = src/mal/readline.$(CLJ_MODE)
+SOURCES_BASE = $(SOURCES_UTIL) src/mal/printer.cljc
+SOURCES_LISP = src/mal/env.cljc src/mal/core.cljc src/mal/stepA_mal.cljc
+SRCS = $(SOURCES_BASE) src/mal/env.cljc src/mal/core.cljc
 SOURCES = $(SOURCES_BASE) $(SOURCES_LISP)
 
-all: deps
+DEPS = $(if $(filter cljs,$(CLJ_MODE)),node_modules,deps)
 
 dist: mal.jar mal
 
@@ -12,15 +14,23 @@ deps:
 
 mal.jar: $(SOURCES)
 	lein with-profile stepA uberjar
-	cp target/mal-0.0.1-SNAPSHOT-standalone.jar $@
+	cp target/stepA_mal.jar $@
 
 SHELL := bash
 mal: mal.jar
 	cat <(echo -e '#!/bin/sh\nexec java -jar "$$0" "$$@"') mal.jar > $@
 	chmod +x mal
 
-target/%.jar: src/%.clj $(SRCS)
+src/mal/%.cljc: $(DEPS)
+	@true
+
+#src/mal/stepA_mal.cljc: $(DEPS)
+
+target/%.jar: src/mal/%.cljc $(SRCS)
 	lein with-profile $(word 1,$(subst _, ,$*)) uberjar
+
+node_modules:
+	npm install
 
 clean:
 	rm -rf target/ mal.jar mal

@@ -1,11 +1,14 @@
 .bash_history
 .cache
+.config
 .mal-history
 .crystal
 .lein
 .m2
 .ivy2
 .sbt
+.npm
+.node-gyp
 */experiments
 */node_modules
 *.o
@@ -124,3 +127,11 @@ common-lisp/*.fasl
 common-lisp/*.lib
 common-lisp/images/*
 common-lisp/hist/*
+livescript/*.js
+!livescript/node_readline.js
+livescript/node_modules
+elm/node_modules
+elm/elm-stuff
+elm/*.js
+!elm/node_readline.js
+!elm/bootstrap.js

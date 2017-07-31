@@ -6,7 +6,7 @@
 
 Mal is a Clojure inspired Lisp interpreter.
 
-Mal is implemented in 63 languages:
+Mal is implemented in 68 languages:
 
 * Ada
 * GNU awk
@@ -23,6 +23,7 @@ Mal is implemented in 63 languages:
 * D
 * Dart
 * Elixir
+* Elm
 * Emacs Lisp
 * Erlang
 * ES6 (ECMAScript 6 / ECMAScript 2015)
@@ -32,6 +33,7 @@ Mal is implemented in 63 languages:
 * Go
 * Groovy
 * GNU Guile
+* GNU Smalltalk
 * Haskell
 * Haxe
 * Io
@@ -39,6 +41,7 @@ Mal is implemented in 63 languages:
 * JavaScript ([Online Demo](http://kanaka.github.io/mal))
 * Julia
 * Kotlin
+* LiveScript
 * Logo
 * Lua
 * GNU Make
@@ -61,6 +64,7 @@ Mal is implemented in 63 languages:
 * RPython
 * R
 * Racket
+* Rexx
 * Ruby
 * Rust
 * Scala
@@ -68,6 +72,7 @@ Mal is implemented in 63 languages:
 * Swift
 * Swift 3
 * Tcl
+* TypeScript
 * VHDL
 * Vimscript
 * Visual Basic.NET
@@ -101,7 +106,12 @@ conference (yes the presentation is a mal program). At Midwest.io
 2015, Joel Martin gave a presentation on Mal titled "Achievement
 Unlocked: A Better Path to Language Learning".
 [Video](https://www.youtube.com/watch?v=lgyOAiRtZGw),
-[Slides](http://kanaka.github.io/midwest.io.mal/).
+[Slides](http://kanaka.github.io/midwest.io.mal/). More recently
+Joel gave a presentation on "Make Your Own Lisp Interpreter in
+10 Incremental Steps" at LambdaConf 2016: [Part
+1](https://www.youtube.com/watch?v=jVhupfthTEk), [Part
+2](https://www.youtube.com/watch?v=X5OQBMGpaTU),
+[Slides](http://kanaka.github.io/lambdaconf/).
 
 If you are interesting in creating a mal implementation (or just
 interested in using mal for something), please drop by the #mal
@@ -338,6 +348,18 @@ mix stepX_YYY
 iex -S mix stepX_YYY
 ```
 
+### Elm
+
+*The Elm implementation was created by [Jos van Bakel](https://github.com/c0deaddict)*
+
+The Elm implementation of mal has been tested with Elm 0.18.0
+
+```
+cd elm
+make stepX_YYY.js
+STEP=stepX_YYY ./run
+```
+
 ### Erlang
 
 *The Erlang implementation was created by [Nathan Fiedler (nlfiedler)](https://github.com/nlfiedler)*
@@ -434,6 +456,17 @@ cd guile
 guile -L ./ stepX_YYY.scm
 ```
 
+### GNU Smalltalk
+
+*The Smalltalk implementation was created by [Vasilij Schneidermann](https://github.com/wasamasa)*
+
+The Smalltalk implementation of mal has been tested with GNU Smalltalk 3.2.91.
+
+```
+cd gst
+./run
+```
+
 ### Haskell
 
 The Haskell implementation requires the ghc compiler version 7.10.1 or
@@ -519,6 +552,18 @@ make
 java -jar stepX_YYY.jar
 ```
 
+### LiveScript
+
+*The LiveScript implementation was created by [Jos van Bakel](https://github.com/c0deaddict)*
+
+The LiveScript implementation of mal has been tested with LiveScript 1.5.
+
+```
+cd livescript
+make
+node_modules/.bin/lsc stepX_YYY.ls
+```
+
 ### Logo
 
 *The Logo implementation was created by [Dov Murik](https://github.com/dubek)*
@@ -560,11 +605,11 @@ cd make
 make -f stepX_YYY.mk
 ```
 
-### Nim 0.15.2
+### Nim 0.17.0
 
 *The Nim implementation was created by [Dennis Felsing (def-)](https://github.com/def-)*
 
-The Nim implementation of mal has been tested with Nim 0.15.2.
+The Nim implementation of mal has been tested with Nim 0.17.0.
 
 ```
 cd nim
@@ -777,6 +822,18 @@ cd racket
 ./stepX_YYY.rkt
 ```
 
+### Rexx
+
+*The Rexx implementation was created by [Dov Murik](https://github.com/dubek)*
+
+The Rexx implementation of mal has been tested with Regina Rexx 3.6.
+
+```
+cd rexx
+make
+rexx -a ./stepX_YYY.rexxpp
+```
+
 ### Ruby (1.9+)
 
 ```
@@ -854,6 +911,19 @@ editing support, install tclreadline.
 ```
 cd tcl
 tclsh ./stepX_YYY.tcl
+```
+
+### TypeScript
+
+*The TypeScript implementation was created by [vvakame](https://github.com/vvakame)*
+
+The TypeScript implementation of mal requires the TypeScript 2.2 compiler.
+It has been tested with Node.js v6.
+
+```
+cd ts
+make
+node ./stepX_YYY.js
 ```
 
 ### VHDL

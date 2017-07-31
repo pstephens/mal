@@ -48,6 +48,8 @@ PYTHON = python
 USE_MATLAB =
 # python, js, cpp, or neko are currently supported
 HAXE_MODE = neko
+# clj or cljs are currently supported (Clojure vs ClojureScript/lumo)
+CLJ_MODE = clj
 
 # Extra options to pass to runtest.py
 TEST_OPTS =
@@ -68,8 +70,6 @@ plpgsql_TEST_OPTS = --start-timeout 60 --test-timeout 180
 plsql_TEST_OPTS = --start-timeout 120 --test-timeout 120
 perl6_TEST_OPTS = --test-timeout=60
 
-DOCKERIZE=
-
 # Run target/rule within docker image for the implementation
 DOCKERIZE =
 
@@ -78,11 +78,13 @@ DOCKERIZE =
 #
 
 IMPLS = ada awk bash basic c d chuck clojure coffee common-lisp cpp crystal cs dart \
-	erlang elisp elixir es6 factor forth fsharp go groovy guile haskell \
+	erlang elisp elixir es6 factor forth fsharp go groovy gst guile haskell \
 	haxe io java julia js kotlin logo lua make mal ocaml matlab miniMAL \
 	nim objc objpascal perl perl6 php pil plpgsql plsql powershell ps \
-	python r racket rpython ruby rust scala skew swift swift3 tcl vb vhdl \
-	vimscript
+	python r racket rexx rpython ruby rust scala skew swift swift3 tcl ts vb vhdl \
+	vimscript livescript elm
+
+EXTENSION = .mal
 
 step0 = step0_repl
 step1 = step1_read_print
@@ -95,6 +97,9 @@ step7 = step7_quote
 step8 = step8_macros
 step9 = step9_try
 stepA = stepA_mal
+
+argv_STEP = step6_file
+
 
 regress_step0 = step0
 regress_step1 = step1
@@ -133,6 +138,9 @@ haxe_STEP_TO_PROG_python = haxe/$($(1)).py
 haxe_STEP_TO_PROG_cpp    = haxe/cpp/$($(1))
 haxe_STEP_TO_PROG_js     = haxe/$($(1)).js
 
+clojure_STEP_TO_PROG_clj  = clojure/target/$($(1)).jar
+clojure_STEP_TO_PROG_cljs = clojure/src/mal/$($(1)).cljc
+
 opt_DEFERRABLE      = $(if $(strip $(DEFERRABLE)),$(if $(filter t true T True TRUE 1 y yes Yes YES,$(DEFERRABLE)),--deferrable,--no-deferrable),--no-deferrable)
 opt_OPTIONAL        = $(if $(strip $(OPTIONAL)),$(if $(filter t true T True TRUE 1 y yes Yes YES,$(OPTIONAL)),--optional,--no-optional),--no-optional)
 
@@ -141,7 +149,7 @@ opt_OPTIONAL        = $(if $(strip $(OPTIONAL)),$(if $(filter t true T True TRUE
 # being tested.
 STEP_TEST_FILES = $(strip $(wildcard \
 		    $(foreach s,$(if $(strip $(REGRESS)),$(regress_$(2)),$(2)),\
-		      $(1)/tests/$($(s)).mal tests/$($(s)).mal)))
+		      $(1)/tests/$($(s))$(EXTENSION) tests/$($(s))$(EXTENSION))))
 
 # Map of step (e.g. "step8") to executable file for that step
 ada_STEP_TO_PROG =     ada/$($(1))
@@ -151,7 +159,7 @@ basic_STEP_TO_PROG =   basic/$($(1)).bas
 c_STEP_TO_PROG =       c/$($(1))
 d_STEP_TO_PROG =       d/$($(1))
 chuck_STEP_TO_PROG =   chuck/$($(1)).ck
-clojure_STEP_TO_PROG = clojure/target/$($(1)).jar
+clojure_STEP_TO_PROG = $(clojure_STEP_TO_PROG_$(CLJ_MODE))
 coffee_STEP_TO_PROG =  coffee/$($(1)).coffee
 common-lisp_STEP_TO_PROG =  common-lisp/$($(1))
 cpp_STEP_TO_PROG =     cpp/$($(1))
@@ -167,6 +175,7 @@ forth_STEP_TO_PROG =   forth/$($(1)).fs
 fsharp_STEP_TO_PROG =  fsharp/$($(1)).exe
 go_STEP_TO_PROG =      go/$($(1))
 groovy_STEP_TO_PROG =  groovy/$($(1)).groovy
+gst_STEP_TO_PROG =     gst/$($(1)).st
 java_STEP_TO_PROG =    java/target/classes/mal/$($(1)).class
 haskell_STEP_TO_PROG = haskell/$($(1))
 haxe_STEP_TO_PROG =    $(haxe_STEP_TO_PROG_$(HAXE_MODE))
@@ -194,6 +203,7 @@ ps_STEP_TO_PROG =      ps/$($(1)).ps
 python_STEP_TO_PROG =  python/$($(1)).py
 r_STEP_TO_PROG =       r/$($(1)).r
 racket_STEP_TO_PROG =  racket/$($(1)).rkt
+rexx_STEP_TO_PROG =    rexx/$($(1)).rexx
 rpython_STEP_TO_PROG = rpython/$($(1))
 ruby_STEP_TO_PROG =    ruby/$($(1)).rb
 rust_STEP_TO_PROG =    rust/target/release/$($(1))
@@ -202,10 +212,13 @@ skew_STEP_TO_PROG =    skew/$($(1)).js
 swift_STEP_TO_PROG =   swift/$($(1))
 swift3_STEP_TO_PROG =  swift3/$($(1))
 tcl_STEP_TO_PROG =     tcl/$($(1)).tcl
+ts_STEP_TO_PROG =      ts/$($(1)).js
 vb_STEP_TO_PROG =      vb/$($(1)).exe
 vhdl_STEP_TO_PROG =    vhdl/$($(1))
 vimscript_STEP_TO_PROG = vimscript/$($(1)).vim
 guile_STEP_TO_PROG =   guile/$($(1)).scm
+livescript_STEP_TO_PROG = livescript/$($(1)).js
+elm_STEP_TO_PROG =     elm/$($(1)).js
 
 
 # Needed some argument munging
@@ -224,7 +237,15 @@ actual_impl = $(if $(filter mal,$(1)),$(MAL_IMPL),$(1))
 # Returns nothing if DOCKERIZE is not set, otherwise returns the
 # docker prefix necessary to run make within the docker environment
 # for this impl
-get_build_prefix = $(if $(strip $(DOCKERIZE)),docker run -it --rm -u $(shell id -u) -v $(dir $(abspath $(lastword $(MAKEFILE_LIST)))):/mal -w /mal/$(1) $(if $(filter factor,$(1)),-e FACTOR_ROOTS=$(FACTOR_ROOTS),) $(call impl_to_image,$(1)) ,)
+get_build_prefix = $(strip $(if $(strip $(DOCKERIZE)),\
+    docker run \
+    -it --rm -u $(shell id -u) \
+    -v $(dir $(abspath $(lastword $(MAKEFILE_LIST)))):/mal \
+    -w /mal/$(1) \
+    $(if $(filter clojure,$(1)),-e CLJ_MODE=$(CLJ_MODE),) \
+    $(if $(filter factor,$(1)),-e FACTOR_ROOTS=$(FACTOR_ROOTS),) \
+    $(call impl_to_image,$(1)) \
+    ,))
 
 # Takes impl and step arguments
 # Returns a command prefix (docker command and environment variables)
@@ -234,6 +255,7 @@ get_run_prefix = $(strip $(if $(strip $(DOCKERIZE)),\
     -it --rm -u $(shell id -u) \
     -v $(dir $(abspath $(lastword $(MAKEFILE_LIST)))):/mal \
     -w /mal/$(call actual_impl,$(1)) \
+    $(if $(filter clojure,$(1)),-e CLJ_MODE=$(CLJ_MODE),) \
     $(if $(filter haxe,$(1)),-e HAXE_MODE=$(HAXE_MODE),) \
     $(if $(filter factor,$(1)),-e FACTOR_ROOTS=$(FACTOR_ROOTS),) \
     $(foreach env,$(3),-e $(env)) \
@@ -290,7 +312,7 @@ ALL_REPL = $(strip $(sort \
 $(foreach i,$(DO_IMPLS),$(foreach s,$(STEPS),$(call $(i)_STEP_TO_PROG,$(s)))):
 	$(foreach impl,$(word 1,$(subst /, ,$(@))),\
 	  $(if $(DOCKERIZE), \
-	    $(call get_build_prefix,$(impl))$(MAKE) $(patsubst $(impl)/%,%,$(@)), \
+	    $(call get_build_prefix,$(impl)) $(MAKE) $(patsubst $(impl)/%,%,$(@)), \
 	    $(MAKE) -C $(impl) $(subst $(impl)/,,$(@))))
 
 # Allow IMPL, and IMPL^STEP
@@ -315,7 +337,7 @@ $(ALL_TESTS): $$(call $$(word 2,$$(subst ^, ,$$(@)))_STEP_TO_PROG,$$(word 3,$$(s
 	      echo 'Testing $@; step file: $+, test file: $(test)' && \
 	      echo 'Running: $(call get_runtest_cmd,$(impl),$(step)) ../$(test) -- ../$(impl)/run' && \
 	      $(call get_runtest_cmd,$(impl),$(step)) ../$(test) -- ../$(impl)/run && \
-	      $(if $(filter tests/step6_file.mal,$(test)),\
+	      $(if $(filter tests/$(argv_STEP)$(EXTENSION),$(test)),\
 	        echo '----------------------------------------------' && \
 	        echo 'Testing ARGV of $@; step file: $+' && \
 	        echo 'Running: $(call get_argvtest_cmd,$(impl),$(step)) ../$(impl)/run ' && \

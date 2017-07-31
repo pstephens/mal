@@ -1,5 +1,5 @@
 REM Memory layout:
-REM 
+REM
 REM type            bytes
 REM ----------      ----------
 REM nil             ref/ 0 |  0          |              |
@@ -20,7 +20,7 @@ REM environment     ref/13 | hmap Z% idx | outer Z% idx |
 REM metadata        ref/14 | obj Z% idx  | meta Z% idx  |
 REM FREE             sz/15 | next Z% idx |              |
 REM
-REM The first 15 locations are constant/persistent values:
+REM Locations 0-15 are for constant/persistent values:
 REM    0: nil
 REM    2: false
 REM    4: true
@@ -28,10 +28,35 @@ REM    6: empty list
 REM    9: empty vector
 REM   12: empty hash-map
 
-REM Note: The INIT_MEMORY function is at end of this file for
-REM efficiency. The most commonly used function should be at the top
-REM since BASIC scans line numbers for every GOTO/GOSUB
+REM Note: DIM_MEMORY for C64 BASIC and the INIT_MEMORY function are at
+REM end of this file for efficiency on C64. The most commonly used
+REM function should be at the top since C64 BASIC scans line numbers
+REM for every GOTO/GOSUB. On the other hand, QBasic requires that
+REM arrays are dimensioned at the top of the file, not just as the
+REM first operation on that array so DIM_MEMORY for QBasic is here at
+REM the top.
 
+#qbasic DIM_MEMORY:
+#qbasic   T=0
+#qbasic
+#qbasic   Z1=8191+1424: REM Z% (boxed memory) size (2 bytes each)
+#qbasic   Z2=199: REM S$/S% (string memory) size (3+2 bytes each)
+#qbasic   Z3=200: REM X% (call stack) size (2 bytes each)
+#qbasic   Z4=64: REM Y% (release stack) size (4 bytes each)
+#qbasic
+#qbasic   REM boxed element memory
+#qbasic   DIM Z%(Z1): REM TYPE ARRAY
+#qbasic
+#qbasic   REM string memory storage
+#qbasic   S=0:DIM S$(Z2):DIM S%(Z2)
+#qbasic
+#qbasic   REM call/logic stack
+#qbasic   X=-1:DIM X%(Z3): REM stack of Z% indexes
+#qbasic
+#qbasic   REM pending release stack
+#qbasic   Y=-1:DIM Y%(Z4,1): REM stack of Z% indexes and level/LV values
+#qbasic
+#qbasic   RETURN
 
 REM stack functions
 
@@ -39,12 +64,12 @@ REM stack functions
 #qbasic   X=X+1:X%(X)=A:RETURN
 #qbasic POP_A:
 #qbasic   A=X%(X):X=X-1:RETURN
-#qbasic 
+#qbasic
 #qbasic PUSH_R:
 #qbasic   X=X+1:X%(X)=R:RETURN
 #qbasic POP_R:
 #qbasic   R=X%(X):X=X-1:RETURN
-#qbasic 
+#qbasic
 #qbasic PUSH_Q:
 #qbasic   X=X+1:X%(X)=Q:RETURN
 #qbasic POP_Q:
@@ -68,12 +93,12 @@ REM stack functions
 #cbm   X=X+2:POKE X,A AND255:POKE X+1,A/256:RETURN
 #cbm POP_A:
 #cbm   A=PEEK(X)+PEEK(X+1)*256:X=X-2:RETURN
-#cbm 
+#cbm
 #cbm PUSH_R:
 #cbm   X=X+2:POKE X,R AND255:POKE X+1,R/256:RETURN
 #cbm POP_R:
 #cbm   R=PEEK(X)+PEEK(X+1)*256:X=X-2:RETURN
-#cbm 
+#cbm
 #cbm PUSH_Q:
 #cbm   X=X+2:POKE X,Q AND255:POKE X+1,Q/256:RETURN
 #cbm POP_Q:
@@ -125,7 +150,7 @@ ALLOC:
     GOTO ALLOC_DONE
   ALLOC_UNUSED:
     REM PRINT "ALLOC_UNUSED ZI: "+STR$(ZI)+", U: "+STR$(U)+", R: "+STR$(R)
-    IF R+SZ>Z1 THEN PRINT "Out of mal memory!":END
+    IF R+SZ>Z1 THEN GOSUB PR_MEMORY_SUMMARY_SMALL:PRINT "Out of mal memory!":END
     ZI=ZI+SZ
     IF U=R THEN ZK=ZI
     REM set previous free to new memory top
@@ -184,14 +209,16 @@ RELEASE:
   REM PRINT "RELEASE AY:"+STR$(AY)+" ["+R$+"] (byte0:"+STR$(Z%(AY))+", SZ:"+STR$(SZ)+")"
 
   REM sanity check not already freed
-  IF (U)=15 THEN PRINT "RELEASE of free:"+STR$(AY):END
-  IF Z%(AY)<15 THEN PRINT "RELEASE of unowned:"+STR$(AY):END
+  REM MEMORY DEBUGGING:
+  REM IF U=15 THEN PRINT "RELEASE of free:"+STR$(AY):END
+  REM IF Z%(AY)<15 THEN PRINT "RELEASE of unowned:"+STR$(AY):END
 
   REM decrease reference count by one
   Z%(AY)=Z%(AY)-32
 
   REM nil, false, true, empty sequences
-  IF AY<16 AND Z%(AY)<32 THEN PRINT "RELEASE of empty:"+STR$(AY):END
+  REM MEMORY DEBUGGING:
+  REM IF AY<16 AND Z%(AY)<32 THEN PRINT "RELEASE of empty:"+STR$(AY):END
   IF AY<16 THEN GOTO RELEASE_TOP
 
   REM our reference count is not 0, so don't release
@@ -208,7 +235,8 @@ RELEASE:
     RETURN
   RELEASE_STRING:
     REM string type, release interned string, then FREE reference
-    IF S%(V)=0 THEN ER=-1:E$="RELEASE of free string:"+STR$(S%(V)):RETURN
+    REM MEMORY DEBUGGING:
+    REM IF S%(V)=0 THEN PRINT "RELEASE of free string:"+STR$(S%(V)):END
     S%(V)=S%(V)-1
     IF S%(V)=0 THEN S$(V)="": REM free BASIC string
     REM free the atom itself
@@ -302,16 +330,35 @@ REM release stack functions
 #cbm   GOTO RELEASE_PEND
 
 
-INIT_MEMORY:
-  #cbm T=FRE(0)
-  #qbasic T=0
 
-  Z1=8191+650: REM Z% (boxed memory) size (2 bytes each)
-  Z2=199: REM S$/S% (string memory) size (3+2 bytes each)
-  #qbasic Z3=200: REM X% (call stack) size (2 bytes each)
-  #cbm Z3=49152: REM X starting point at $C000 (2 bytes each)
-  #qbasic Z4=64: REM Y% (release stack) size (4 bytes each)
-  #cbm Z4=52992: REM Y starting point at $CF00 (4 bytes each)
+#cbm DIM_MEMORY:
+#cbm   T=FRE(0)
+#cbm
+#cbm   Z1=8191+1424: REM Z% (boxed memory) size (2 bytes each)
+#cbm   Z2=199: REM S$/S% (string memory) size (3+2 bytes each)
+#cbm   Z3=49152: REM X starting point at $C000 (2 bytes each)
+#cbm   Z4=52992: REM Y starting point at $CF00 (4 bytes each)
+#cbm
+#cbm   REM TODO: for performance, define all/most non-array variables here
+#cbm   REM so that the array area doesn't have to be shifted down everytime
+#cbm   REM a new non-array variable is defined
+#cbm
+#cbm   REM boxed element memory
+#cbm   DIM Z%(Z1): REM TYPE ARRAY
+#cbm
+#cbm   REM string memory storage
+#cbm   S=0:DIM S$(Z2):DIM S%(Z2)
+#cbm
+#cbm   REM call/logic stack
+#cbm   X=Z3-2: REM stack of 1920 Z% indexes at $C000
+#cbm
+#cbm   REM pending release stack
+#cbm   Y=Z4-4: REM stack of 64 Y% indexes/levels at $CF00
+#cbm
+#cbm   RETURN
+
+INIT_MEMORY:
+  GOSUB DIM_MEMORY
 
   REM global error state
   REM  -2 : no error
@@ -319,13 +366,6 @@ INIT_MEMORY:
   REM >=0 : pointer to error object
   ER=-2
   E$=""
-
-  REM TODO: for performance, define all/most non-array variables here
-  REM so that the array area doesn't have to be shifted down everytime
-  REM a new non-array variable is defined
-
-  REM boxed element memory
-  DIM Z%(Z1): REM TYPE ARRAY
 
   REM Predefine nil, false, true, and an empty sequences
   FOR I=0 TO 15:Z%(I)=0:NEXT I
@@ -342,17 +382,7 @@ INIT_MEMORY:
   REM start of free list
   ZK=16
 
-  REM string memory storage
-  S=0:DIM S$(Z2):DIM S%(Z2)
-
-  REM call/logic stack
-  #qbasic X=-1:DIM X%(Z3): REM stack of Z% indexes
-  #cbm X=Z3-2: REM stack of 1920 Z% indexes at $C000
-
-  REM pending release stack
-  #qbasic Y=-1:DIM Y%(Z4,1): REM stack of Z% indexes and level/LV values
-  #cbm Y=Z4-4: REM stack of 64 Y% indexes/levels at $CF00
-
+  REM start of time clock
   BT=TI
 
   RETURN

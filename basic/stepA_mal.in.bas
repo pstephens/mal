@@ -10,10 +10,7 @@ REM $INCLUDE: 'core.in.bas'
 
 REM $INCLUDE: 'debug.in.bas'
 
-REM READ(A$) -> R
-MAL_READ:
-  GOSUB READ_STR
-  RETURN
+REM READ is inlined in RE
 
 REM QUASIQUOTE(A) -> R
 SUB QUASIQUOTE
@@ -132,7 +129,7 @@ SUB EVAL_AST
 
   GOSUB TYPE_A
   IF T=5 THEN GOTO EVAL_AST_SYMBOL
-  IF T>=6 AND T<=8 THEN GOTO EVAL_AST_SEQ
+  IF T>5 AND T<9 THEN GOTO EVAL_AST_SEQ
 
   REM scalar: deref to actual value and inc ref cnt
   R=A
@@ -506,17 +503,15 @@ SUB EVAL
 
 END SUB
 
-REM PRINT(A) -> R$
-MAL_PRINT:
-  AZ=A:B=1:GOSUB PR_STR
-  RETURN
+REM PRINT is inlined in REP
+
 
 REM RE(A$) -> R
 REM Assume D has repl_env
 REM caller must release result
 RE:
   R1=-1
-  GOSUB MAL_READ
+  GOSUB READ_STR: REM inlined MAL_READ
   R1=R
   IF ER<>-2 THEN GOTO RE_DONE
 
@@ -536,7 +531,7 @@ SUB REP
   R2=R
   IF ER<>-2 THEN GOTO REP_DONE
 
-  A=R:GOSUB MAL_PRINT
+  AZ=R:B=1:GOSUB PR_STR: REM MAL_PRINT
 
   REP_DONE:
     REM Release memory from MAL_READ and EVAL
@@ -589,6 +584,8 @@ MAIN:
   A$="(def! -*ARGS*- (load-file "+CHR$(34)+".args.mal"+CHR$(34)+"))"
   GOSUB RE:AY=R:GOSUB RELEASE
 
+  IF ER>-2 THEN GOSUB PRINT_ERROR:END
+
   REM set the argument list
   A$="(def! *ARGV* (rest -*ARGS*-))"
   GOSUB RE:AY=R:GOSUB RELEASE
@@ -597,12 +594,14 @@ MAIN:
   A$="(first -*ARGS*-)"
   GOSUB RE
 
-  REM if there is an argument, then run it as a program
-  IF R<>0 THEN AY=R:GOSUB RELEASE:GOTO RUN_PROG
   REM no arguments, start REPL loop
-  IF R=0 THEN GOTO REPL
+  IF R<16 THEN GOTO REPL
+
+  REM if there is an argument, then run it as a program
 
   RUN_PROG:
+    REM free up first arg because we get it again
+    AY=R:GOSUB RELEASE
     REM run a single mal program and exit
     A$="(load-file (first -*ARGS*-))"
     GOSUB RE
@@ -613,7 +612,7 @@ MAIN:
     REM print the REPL startup header
     REM save memory by printing this directly
     #cbm PRINT "Mal [C64 BASIC]"
-    #qbasic PRINT "Mal [C64 QBasic]"
+    #qbasic PRINT "Mal [QBasic]"
 
   REPL_LOOP:
     A$="user> ":GOSUB READLINE: REM call input parser
@@ -629,7 +628,7 @@ MAIN:
   QUIT:
     REM GOSUB PR_MEMORY_SUMMARY_SMALL
     PRINT:GOSUB PR_MEMORY_SUMMARY_SMALL
-    GOSUB PR_MEMORY_MAP
+    REM GOSUB PR_MEMORY_MAP
     REM P1=0:P2=ZI:GOSUB PR_MEMORY
     REM P1=D:GOSUB PR_OBJECT
     REM P1=ZK:GOSUB PR_OBJECT

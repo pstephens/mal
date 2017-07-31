@@ -14,13 +14,15 @@ matrix:
     - {env: IMPL=coffee,    services: [docker]}
     - {env: IMPL=cs,        services: [docker]}
     - {env: IMPL=chuck,     services: [docker]}
-    - {env: IMPL=clojure,   services: [docker]}
+    - {env: IMPL=clojure CLJ_MODE=clj,  services: [docker]}
+    - {env: IMPL=clojure CLJ_MODE=cljs, services: [docker]}
     - {env: IMPL=common-lisp, services: [docker]}
     - {env: IMPL=crystal,   services: [docker]}
     - {env: IMPL=d,         services: [docker]}
     - {env: IMPL=dart,      services: [docker]}
     - {env: IMPL=elisp,     services: [docker]}
     - {env: IMPL=elixir,    services: [docker]}
+    - {env: IMPL=elm,       services: [docker]}
     - {env: IMPL=erlang NO_PERF=1, services: [docker]} # perf runs out of memory
     - {env: IMPL=es6,       services: [docker]}
     - {env: IMPL=factor,    services: [docker]}
@@ -28,6 +30,7 @@ matrix:
     - {env: IMPL=fsharp,    services: [docker]}
     - {env: IMPL=go,        services: [docker]}
     - {env: IMPL=groovy,    services: [docker]}
+    - {env: IMPL=gst,       services: [docker]}
     - {env: IMPL=guile,     services: [docker]}
     - {env: IMPL=haskell,   services: [docker]}
     - {env: IMPL=haxe,      services: [docker]}
@@ -36,12 +39,13 @@ matrix:
     - {env: IMPL=js,        services: [docker]}
     - {env: IMPL=julia,     services: [docker]}
     - {env: IMPL=kotlin,    services: [docker]}
+    - {env: IMPL=livescript, services: [docker]}
     - {env: IMPL=logo,      services: [docker]}
     - {env: IMPL=lua,       services: [docker]}
     - {env: IMPL=make,      services: [docker]}
     - {env: IMPL=mal BUILD_IMPL=js NO_PERF=1, services: [docker]}
     - {env: IMPL=matlab, services: [docker]} # Uses Octave
-    - {env: IMPL=miniMAL BUILD_IMPL=js, services: [docker]}
+    - {env: IMPL=miniMAL,   services: [docker]}
     - {env: IMPL=nim,       services: [docker]}
     - {env: IMPL=objpascal, services: [docker]}
     - {env: IMPL=objc NO_DOCKER=1, os: osx, osx_image: xcode7}
@@ -58,6 +62,7 @@ matrix:
     - {env: IMPL=python,    services: [docker]}
     - {env: IMPL=r,         services: [docker]}
     - {env: IMPL=racket,    services: [docker]}
+    - {env: IMPL=rexx,      services: [docker]}
     - {env: IMPL=rpython,   services: [docker]}
     - {env: IMPL=ruby,      services: [docker]}
     - {env: IMPL=rust,      services: [docker]}
@@ -67,6 +72,7 @@ matrix:
     - {env: IMPL=swift3,    services: [docker]}
     - {env: IMPL=swift3 NO_DOCKER=1, os: osx, osx_image: xcode8}
     - {env: IMPL=tcl,       services: [docker]}
+    - {env: IMPL=ts,        services: [docker]}
     - {env: IMPL=vb,        services: [docker]}
     - {env: IMPL=vhdl,      services: [docker]}
     - {env: IMPL=vimscript, services: [docker]}
