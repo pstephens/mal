@@ -20,4 +20,5 @@ repositories {
 
 dependencies {
     compile 'net.java.dev.jna:jna:4.4.0'
+    testCompile 'junit:junit:4.12'
 }
