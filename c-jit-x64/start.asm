@@ -21,9 +21,7 @@ _start:
     ; | ...                        |               |                   |
     ; |----------------------------|---------------|-------------------|
 
-
     xor rbp, rbp                     ; zero rbp per ABI
-
 
     mov r9, [rsp]                    ; int argc = *rsp
     lea rsi, [rsp + 8]               ; char** argv = rsp + 8

@@ -1,9 +1,7 @@
 #ifndef C_JIT_X64_SYSCALL_H
 #define C_JIT_X64_SYSCALL_H
 
-typedef unsigned long size_t;
-
-#define null ((void*)0)
+#include "stdlib.h"
 
 long syscall_write(unsigned int fd, const char* buff, size_t count);
 

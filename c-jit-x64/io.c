@@ -1,10 +1,5 @@
 #include "io.h"
-
-size_t strlen(const char* s) {
-    size_t ctr = 0;
-    for(; *s; ++ctr, ++s) ;
-    return ctr;
-}
+#include "stdlib.h"
 
 void puts(const char* s) {
     size_t len = strlen(s);

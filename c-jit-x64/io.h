@@ -3,8 +3,6 @@
 
 #include "syscall.h"
 
-size_t strlen(const char* s);
-
 void puts(const char* s);
 
 void put_long(long v);
