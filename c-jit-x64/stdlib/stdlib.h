@@ -3,7 +3,7 @@
 
 typedef unsigned long size_t;
 
-#define null ((void*)0)
+#define NULL ((void*)0)
 
 size_t strlen(const char* s);
 

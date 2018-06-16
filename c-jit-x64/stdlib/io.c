@@ -1,7 +1,7 @@
 #include "io.h"
 #include "stdlib.h"
 
-void puts(const char* s) {
+void put_string(const char* s) {
     size_t len = strlen(s);
     syscall_write(0, s, len);
 }
@@ -28,5 +28,5 @@ void put_long(long v) {
         }
     }
 
-    puts(s + 1);
+    put_string(s + 1);
 }

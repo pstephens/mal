@@ -3,7 +3,7 @@
 
 #include "syscall.h"
 
-void puts(const char* s);
+void put_string(const char* s);
 
 void put_long(long v);
 

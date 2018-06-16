@@ -27,7 +27,7 @@ _start:
     lea rsi, [rsp + 8]               ; char** argv = rsp + 8
     lea rdx, [rsp + r9 * 8 + 16]     ; char** envp = rsp + argc * 8 + 16
 
-    ; find the terminating null envp entry
+    ; find the terminating NULL envp entry
     xor rax, rax
     mov rcx, -1
     mov rdi, rdx
