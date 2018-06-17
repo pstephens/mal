@@ -8,5 +8,5 @@ int main(int argc, char** argv) {
 
     print_test_modules();
 
-    return 0;
+    return test_runner("*", "*");
 }
