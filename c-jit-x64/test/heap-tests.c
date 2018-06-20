@@ -2,7 +2,6 @@
 #include "heap-tests.h"
 
 DEFINE_TEST_INSTANCE(foo) {
-    return TEST_PASSED;
 }
 
 void add_heap_tests_module() {

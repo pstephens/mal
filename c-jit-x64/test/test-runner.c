@@ -73,99 +73,90 @@ void print_test_modules() {
     }
 }
 
-
 // adapted from https://www.geeksforgeeks.org/wildcard-character-matching/
 // pattern allows ? or * wildcard characters.
 // ? substitutes exactly one character
 // * substitutes zero or more characters
-static int match(const char* str, const char* pattern) {
+static bool match(const char* str, const char* pattern) {
     if(*str == 0) {
         if(*pattern == 0)
-            return 1;
+            return true;
         else if(*pattern == '*')
             return match(str, pattern + 1);
         else
-            return 0;
+            return false;
     } else if(*pattern == 0) {
-        return 0;
+        return false;
     } else if(*pattern == '*') {
         return match(str + 1, pattern) || match(str, pattern + 1);
     } else if(*pattern == '?' || toupper(*str) == toupper(*pattern)) {
         return match(str + 1, pattern + 1);
     } else {
-        return 0;
+        return false;
     }
 }
 
-static void print_instance_name(test_module_t* mod, test_instance_t* instance, char* msg) {
-    fprintf(stderr, "\n%s%s/%s", msg, mod->name, instance->name);
+static void print_instance_name(test_module_t* mod, test_instance_t* instance, char* prefix, char* suffix) {
+    fprintf(stderr, "%s%s/%s%s", prefix, mod->name, instance->name, suffix);
+}
+
+static void vprint_failure(char* msg, va_list args) {
+    vfprintf(stderr, msg, args);
+}
+
+static void print_failure(char* msg, ...) {
+    va_list arglist;
+    va_start(arglist, msg);
+    vprint_failure(msg, arglist);
+    va_end(arglist);
+}
+
+static void print_success(char* msg, ...) {
+    va_list arglist;
+    va_start(arglist, msg);
+    vfprintf(stderr, msg, arglist);
+    va_end(arglist);
 }
 
 static test_state test_instance(test_module_t* mod, test_instance_t* instance) {
+    print_instance_name(mod, instance, "Testing ", ": ");
     test_state result;
     pid_t pid = fork();
     if(pid == -1) {
         // Record an error
-        print_instance_name(mod, instance, "Failed while attempting to fork ");
-        fprintf(stderr, ". errno=%d\n", errno);
+        print_failure("FAILED while attempting fork. errno=%d\n", errno);
         result = TEST_FAILED;
     } else if(pid == 0) {
         // This is the child process. Execute the test and then exit the process with 0 (success) or 1 (failure).
-        result = instance->func(instance);
-        if(result == TEST_PASSED)
-            exit(0);
-        else
-            exit(1);
+        instance->func(instance);
+        exit(TEST_PASSED);
     } else {
         siginfo_t info;
         if(0 == waitid(P_PID, (id_t) pid, &info, WEXITED | WSTOPPED)) {
             switch(info.si_code) {
                 case CLD_EXITED:
                     switch(info.si_status) {
-                        case 0:
-                            fprintf(stderr, ".");
+                        case TEST_PASSED:
+                            print_success("PASSED\n");
                             result = TEST_PASSED;
                             break;
-                        case 1:
-                            fprintf(stderr, "E");
+                        case TEST_FAILED:
+                            print_failure("FAILED\n");
                             result = TEST_FAILED;
                             break;
                         default:
-                            print_instance_name(mod, instance, "Failed ");
-                            fprintf(stderr, ". exit_code=%d\n", info.si_status);
+                            print_failure("FAILED. exit_code=%d", info.si_status);
                             result = TEST_FAILED;
                             break;
                     }
                     break;
                 default:
-                    print_instance_name(mod, instance, "Failed with wait code ");
-                    switch(info.si_code) {
-                        case CLD_KILLED:
-                            fprintf(stderr, "CLD_KILLED");
-                            break;
-                        case CLD_DUMPED:
-                            fprintf(stderr, "CLD_DUMPED");
-                            break;
-                        case CLD_STOPPED:
-                            fprintf(stderr, "CLD_STOPPED");
-                            break;
-                        case CLD_TRAPPED:
-                            fprintf(stderr, "CLD_TRAPPED");
-                            break;
-                        case CLD_CONTINUED:
-                            fprintf(stderr, "CLD_CONTINUED");
-                            break;
-                        default:
-                            fprintf(stderr, "%d", info.si_code);
-                            break;
-                    }
-                    fprintf(stderr, ", signal=%d\n", info.si_status);
+                    print_failure("FAILED with signal. si_code=%d, si_status=%d\n", info.si_code, info.si_status);
                     result = TEST_FAILED;
                     break;
             }
         } else {
-            print_instance_name(mod, instance, "Failed ");
-            fprintf(stderr, " while waiting for child process. errno=%d\n", errno);
+            print_failure("FAILED to wait(). errno=%d\n", errno);
             result = TEST_FAILED;
         }
     }
@@ -194,4 +185,51 @@ test_state test_runner(char* module_filter, char* instance_filter) {
     }
 
     return result;
+}
+
+void assert_bool(bool actual, bool expected, char* msg, ...) {
+    if((!actual && expected) || (actual && !expected)) {
+        if(msg == NULL) {
+            print_failure("Expected %s but was %s.", expected ? "true" : "false", actual ? "true" : "false");
+        } else {
+            va_list arglist;
+            va_start(arglist, msg);
+            vprint_failure(msg, arglist);
+            va_end(arglist);
+        }
+
+        exit(TEST_FAILED);
+    }
+}
+
+/*void assert_signed(long actual, op_t op, long expected, char* msg, ...);
+
+void assert_unsigned(unsigned long actual, op_t op, unsigned long expected, char* msg, ...);*/
+
+
+
+
+// =========================================
+// Test Cases -- tests for the runner itself
+
+static void match_test_case(const char* pattern, const char* str, bool expected) {
+    assert_bool(match(str, pattern), expected,
+                "Assertion Failed: match(%s, %s) was not %s.", str, pattern, expected ? "true" : "false");
+}
+
+DEFINE_TEST_INSTANCE(match_should_handle_wildcards_properly) {
+    match_test_case("g*ks", "geeks", true);
+    match_test_case("ge?ks*", "geeksforgeeks", true);
+    match_test_case("g*k", "gee", false);
+    match_test_case("*pqrs", "pqrst", false);
+    match_test_case("abc*bcd", "abcdhghgbcd", true);
+    match_test_case("abc*c?d", "abcd", false);
+    match_test_case("*c*d", "abcd", true);
+    match_test_case("*?c*d", "abcd", true);
+}
+
+void add_test_runner_tests_module() {
+    test_module_t* mod = ADD_TEST_MODULE(test-runner);
+
+    ADD_TEST_INSTANCE(mod, match_should_handle_wildcards_properly, NULL);
 }
