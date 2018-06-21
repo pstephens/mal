@@ -57,7 +57,15 @@ static void NAME(const test_instance_t* metadata)
 
 void print_test_modules();
 
-test_state test_runner(char* module_filter, char* instance_filter);
+void test_runner(const char* module_filter, const char* instance_filter);
+
+typedef struct {
+    long count_failed;
+    long count_passed;
+    long count_pending;
+} test_results_t;
+
+void aggregate_test_results(test_results_t* results);
 
 typedef enum assert_ops {
     LT,

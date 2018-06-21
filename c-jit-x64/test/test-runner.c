@@ -78,21 +78,34 @@ void print_test_modules() {
 // ? substitutes exactly one character
 // * substitutes zero or more characters
 static bool match(const char* str, const char* pattern) {
-    if(*str == 0) {
-        if(*pattern == 0)
-            return true;
-        else if(*pattern == '*')
-            return match(str, pattern + 1);
-        else
+    while(true) {
+        if(*str == 0) {
+            if(*pattern == 0) {
+                return true;
+            }
+            else if(*pattern == '*') {
+                pattern++;
+                continue;
+            }
+            else {
+                return false;
+            }
+        } else if(*pattern == 0) {
             return false;
-    } else if(*pattern == 0) {
-        return false;
-    } else if(*pattern == '*') {
-        return match(str + 1, pattern) || match(str, pattern + 1);
-    } else if(*pattern == '?' || toupper(*str) == toupper(*pattern)) {
-        return match(str + 1, pattern + 1);
-    } else {
-        return false;
+        } else if(*pattern == '*') {
+            if(match(str + 1, pattern)) {
+                return true;
+            } else {
+                pattern++;
+                continue;
+            }
+        } else if(*pattern == '?' || toupper(*str) == toupper(*pattern)) {
+            str++;
+            pattern++;
+            continue;
+        } else {
+            return false;
+        }
     }
 }
 
@@ -132,7 +145,7 @@ static test_state test_instance(test_module_t* mod, test_instance_t* instance) {
         exit(TEST_PASSED);
     } else {
         siginfo_t info;
-        if(0 == waitid(P_PID, (id_t) pid, &info, WEXITED | WSTOPPED)) {
+        if(0 == waitid(P_PID, (id_t) pid, &info, (unsigned)WEXITED | (unsigned)WSTOPPED)) {
             switch(info.si_code) {
                 case CLD_EXITED:
                     switch(info.si_status) {
@@ -165,26 +178,55 @@ static test_state test_instance(test_module_t* mod, test_instance_t* instance) {
     return result;
 }
 
-static test_state test_module(test_module_t* mod, char* instance_filter) {
-    test_instance_t* pos = mod->first_instance;
-    test_state result = TEST_PENDING;
-    while(pos != NULL) {
-        result |= test_instance(mod, pos);
-        pos = pos->next;
-    }
+static void test_module(test_module_t* mod, const char* instance_filter) {
+    test_instance_t* instance = mod->first_instance;
+    while(instance != NULL) {
+        if(match(instance->name, instance_filter))
+            test_instance(mod, instance);
 
-    return result;
+        instance = instance->next;
+    }
 }
 
-test_state test_runner(char* module_filter, char* instance_filter) {
+void test_runner(const char* module_filter, const char* instance_filter) {
+    test_module_t *mod = first;
+    while (mod != NULL) {
+        if(match(mod->name, module_filter))
+            test_module(mod, instance_filter);
+
+        mod = mod->next;
+    }
+}
+
+void static aggregate_module_results(test_module_t* mod, test_results_t* results) {
+    test_instance_t* instance = mod->first_instance;
+    while(instance != NULL) {
+        switch(instance->state) {
+            case TEST_PASSED:
+                results->count_passed++;
+                break;
+            case TEST_FAILED:
+                results->count_failed++;
+                break;
+            case TEST_PENDING:
+                results->count_pending++;
+                break;
+            default:
+                fprintf(stderr, "WARN: unexpected test instance state.\n");
+                break;
+        }
+
+        instance = instance->next;
+    }
+}
+
+void aggregate_test_results(test_results_t* results) {
+    memset(results, 0, sizeof(test_results_t));
     test_module_t* pos = first;
-    test_state result = TEST_PENDING;
     while(pos != NULL) {
-        result |= test_module(pos, instance_filter);
+        aggregate_module_results(pos, results);
         pos = pos->next;
     }
-
-    return result;
 }
 
 void assert_bool(bool actual, bool expected, char* msg, ...) {
@@ -226,6 +268,7 @@ DEFINE_TEST_INSTANCE(match_should_handle_wildcards_properly) {
     match_test_case("abc*c?d", "abcd", false);
     match_test_case("*c*d", "abcd", true);
     match_test_case("*?c*d", "abcd", true);
+    match_test_case("f**l", "football", true);
 }
 
 void add_test_runner_tests_module() {
