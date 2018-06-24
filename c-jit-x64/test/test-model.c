@@ -22,7 +22,7 @@ test_modules_t* test_new_modules() {
     return (test_modules_t*)test_alloc(sizeof(test_modules_t));
 }
 
-test_module_t* test_new_module(test_modules_t* mods, char* name, char* filename, int linenumber) {
+test_module_t* test_new_module(test_modules_t* mods, const char* name, const char* filename, int linenumber) {
     test_module_t* mod = (test_module_t*)test_alloc(sizeof(test_module_t));
 
     mod->filename = filename;

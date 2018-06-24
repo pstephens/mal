@@ -55,7 +55,7 @@ test_modules_t* test_new_modules();
 
 void free_test_modules(test_modules_t* mods);
 
-test_module_t* test_new_module(test_modules_t* mods, char* name, char* filename, int linenumber);
+test_module_t* test_new_module(test_modules_t* mods, const char* name, const char* filename, int linenumber);
 
 test_instance_t* test_new_instance(test_module_t* module, const char* name, const char* filename,
                                    int linenumber, test_func func, const void* params);
@@ -66,9 +66,23 @@ void aggregate_test_results(test_modules_t* mods, test_results_t* results);
 static test_info_t NAME ## __info = { #NAME, __FILE__, __LINE__ }; \
 static void NAME(const test_instance_t* metadata)
 
-#define ADD_TEST_INSTANCE(MOD, NAME, PARAMS) \
-    (test_new_instance(MOD, NAME ## __info.name, NAME ## __info.filename, NAME ## __info.linenumber, NAME, PARAMS))
+#define ADD_TEST_INSTANCE(NAME, PARAMS) \
+    (test_new_instance(mod, NAME ## __info.name, NAME ## __info.filename, NAME ## __info.linenumber, NAME, PARAMS))
 
-#define ADD_TEST_MODULE(MODS, NAME) test_new_module(MODS, #NAME, __FILE__, __LINE__)
+#define DEFINE_TEST_MODULE(NAME) \
+static test_info_t NAME ## __mod_info = { #NAME, __FILE__, __LINE__ }; \
+static void NAME ## __mod_def(test_module_t* mod); \
+void NAME ## __mod(test_modules_t* mods) { \
+    test_module_t* mod = test_new_module(mods, \
+                                         NAME ## __mod_info.name, \
+                                         NAME ## __mod_info.filename, \
+                                         NAME ## __mod_info.linenumber); \
+    NAME ## __mod_def(mod); \
+} \
+static void NAME ## __mod_def(test_module_t* mod)
+
+#define ADD_TEST_MODULE(MODS, NAME) \
+    extern void NAME ## __mod(test_modules_t* mods); \
+    NAME ## __mod(MODS)
 
 #endif //C_JIT_X64_TEST_MODEL_H
