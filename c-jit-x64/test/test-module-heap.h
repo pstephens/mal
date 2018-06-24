@@ -7,6 +7,6 @@
 
 #include "test-runner.h"
 
-void add_heap_tests_module();
+void add_heap_tests_module(test_modules_t* mods);
 
 #endif //C_JIT_X64_HEAP_TESTS_H
