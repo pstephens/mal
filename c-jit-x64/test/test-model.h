@@ -7,9 +7,6 @@ typedef enum {
     TEST_FAILED = 2
 } test_state;
 
-struct test_instance;
-struct test_module;
-struct test_modules;
 typedef struct test_instance test_instance_t;
 typedef struct test_module test_module_t;
 typedef struct test_modules test_modules_t;
@@ -29,6 +26,7 @@ struct test_instance {
     const void* params;
     test_func func;
     test_instance_t* next;
+    test_module_t* parent;
 };
 
 struct test_module {
@@ -38,6 +36,7 @@ struct test_module {
     test_instance_t* first_instance;
     test_instance_t* last_instance;
     test_module_t* next;
+    test_modules_t* parent;
 };
 
 struct test_modules {
@@ -84,5 +83,9 @@ static void NAME ## __mod_def(test_module_t* mod)
 #define ADD_TEST_MODULE(MODS, NAME) \
     extern void NAME ## __mod(test_modules_t* mods); \
     NAME ## __mod(MODS)
+
+typedef void (*test_instance_callback)(void* context, const test_instance_t* instance);
+
+void enumerate_test_instances(test_modules_t* mods, test_instance_callback cb, void* context);
 
 #endif //C_JIT_X64_TEST_MODEL_H

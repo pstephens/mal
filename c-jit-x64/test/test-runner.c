@@ -8,8 +8,19 @@
 #include "test-runner.h"
 #include "test-utils.h"
 
-static test_state test_instance(test_module_t* mod, test_instance_t* instance) {
-    print_instance_name(mod, instance, "Testing ", ": ");
+typedef struct test_filter {
+    const char* module_filter;
+    const char* instance_filter;
+} test_filter_t;
+
+static void test_instance(test_filter_t* filter, test_instance_t* instance) {
+    if(!wildcard_match(instance->parent->name, filter->module_filter) ||
+            !wildcard_match(instance->name, filter->instance_filter)) {
+        instance->state = TEST_PENDING;
+        return;
+    }
+
+    print_instance_name(instance->parent, instance, "Testing ", ": ");
     test_state result;
     pid_t pid = fork();
     if(pid == -1) {
@@ -52,25 +63,10 @@ static test_state test_instance(test_module_t* mod, test_instance_t* instance) {
     }
 
     instance->state = result;
-    return result;
-}
-
-static void test_module(test_module_t* mod, const char* instance_filter) {
-    test_instance_t* instance = mod->first_instance;
-    while(instance != NULL) {
-        if(wildcard_match(instance->name, instance_filter))
-            test_instance(mod, instance);
-
-        instance = instance->next;
-    }
 }
 
 void test_runner(test_modules_t* mods, const char* module_filter, const char* instance_filter) {
-    test_module_t *mod = mods->first;
-    while (mod != NULL) {
-        if(wildcard_match(mod->name, module_filter))
-            test_module(mod, instance_filter);
+    test_filter_t filter = { module_filter, instance_filter };
 
-        mod = mod->next;
-    }
+    enumerate_test_instances(mods, (test_instance_callback) test_instance, &filter);
 }

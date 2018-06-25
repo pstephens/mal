@@ -3,6 +3,9 @@
 #include <stdio.h>
 #include "test-utils.h"
 
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wunused-parameter"
+
 // adapted from https://www.geeksforgeeks.org/wildcard-character-matching/
 // pattern allows ? or * wildcard characters.
 // ? substitutes exactly one character
@@ -61,18 +64,12 @@ void print_success(char* msg, ...) {
     va_end(arglist);
 }
 
-static void print_test_module(test_module_t* mod) {
-    test_instance_t* pos = mod->first_instance;
-    while(pos != NULL) {
-        fprintf(stdout, "%s|%s|%s:%d\n", mod->name, pos->name, pos->filename, pos->linenumber);
-        pos = pos->next;
-    }
+static void print_test_instance(void* context,  const test_instance_t* inst) {
+    fprintf(stdout, "%s|%s|%s:%d\n", inst->parent->name, inst->name, inst->filename, inst->linenumber);
 }
 
 void print_test_modules(test_modules_t* mods) {
-    test_module_t* pos = mods->first;
-    while(pos != NULL) {
-        print_test_module(pos);
-        pos = pos->next;
-    }
+    enumerate_test_instances(mods, print_test_instance, NULL);
 }
+
+#pragma clang diagnostic pop

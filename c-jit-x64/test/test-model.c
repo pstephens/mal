@@ -28,6 +28,7 @@ test_module_t* test_new_module(test_modules_t* mods, const char* name, const cha
     mod->filename = filename;
     mod->linenumber = linenumber;
     mod->name = name;
+    mod->parent = mods;
 
     if(mods->first == NULL) mods->first = mod;
     if(mods->last != NULL) mods->last->next = mod;
@@ -46,6 +47,7 @@ test_instance_t* test_new_instance(test_module_t* module, const char* name, cons
     inst->name = name;
     inst->func = func;
     inst->params = params;
+    inst->parent = module;
 
     if(module->first_instance == NULL) module->first_instance = inst;
     if(module->last_instance != NULL) module->last_instance->next = inst;
@@ -54,33 +56,40 @@ test_instance_t* test_new_instance(test_module_t* module, const char* name, cons
     return inst;
 }
 
-static void aggregate_module_results(test_module_t* mod, test_results_t* results) {
-    test_instance_t* instance = mod->first_instance;
-    while(instance != NULL) {
-        switch(instance->state) {
-            case TEST_PASSED:
-                results->count_passed++;
-                break;
-            case TEST_FAILED:
-                results->count_failed++;
-                break;
-            case TEST_PENDING:
-                results->count_pending++;
-                break;
-            default:
-                fprintf(stderr, "WARN: unexpected test instance state.\n");
-                break;
-        }
-
-        instance = instance->next;
+static void aggregate_instance_results(test_results_t* results, test_instance_t* inst) {
+    switch(inst->state) {
+        case TEST_PASSED:
+            results->count_passed++;
+            break;
+        case TEST_FAILED:
+            results->count_failed++;
+            break;
+        case TEST_PENDING:
+            results->count_pending++;
+            break;
+        default:
+            fprintf(stderr, "WARN: unexpected test instance state.\n");
+            break;
     }
 }
 
 void aggregate_test_results(test_modules_t* mods, test_results_t* results) {
     memset(results, 0, sizeof(test_results_t));
-    test_module_t* pos = mods->first;
-    while(pos != NULL) {
-        aggregate_module_results(pos, results);
-        pos = pos->next;
+    enumerate_test_instances(mods, (test_instance_callback) aggregate_instance_results, results);
+}
+
+static void enumerate_test_module(test_module_t* mod, test_instance_callback cb, void* context) {
+    test_instance_t* inst = mod->first_instance;
+    while(inst != NULL) {
+        cb(context, inst);
+        inst = inst->next;
+    }
+}
+
+void enumerate_test_instances(test_modules_t* mods, test_instance_callback cb, void* context) {
+    test_module_t* mod = mods->first;
+    while(mod != NULL) {
+        enumerate_test_module(mod, cb, context);
+        mod = mod->next;
     }
 }
