@@ -1,14 +1,17 @@
 #include <stdio.h>
-#include <argp.h>
 #include "test-model.h"
 #include "test-runner.h"
 
 int main(int argc, char** argv) {
 
+    extern void lambda_test();
+
+    lambda_test();
+
     test_modules_t* mods = test_new_modules();
     ADD_TEST_MODULE(mods, stdlib_heap);
     ADD_TEST_MODULE(mods, test_module_self);
-    
+
     test_runner(mods, "*", "*");
 
     test_results_t results;

@@ -24,6 +24,6 @@ target_link_libraries(step0_repl -nostdlib)
 
 enable_testing()
 
-add_executable(test_suite test/test-main.c ${stdlib_src} test/test-runner.c test/test-runner.h test/test-module-heap.c test/test-utils.c test/test-utils.h test/test-module-self.c test/test-assertions.c test/test-assertions.h test/test-model.c test/test-model.h)
+add_executable(test_suite test/test-main.c ${stdlib_src} test/test-runner.c test/test-runner.h test/test-module-heap.c test/test-utils.c test/test-utils.h test/test-module-self.c test/test-assertions.c test/test-assertions.h test/test-model.c test/test-model.h test/lambda_test.c)
 
 add_test(NAME test123 COMMAND test_suite a b c)
