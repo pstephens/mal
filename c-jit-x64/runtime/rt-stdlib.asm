@@ -1,11 +1,11 @@
 
 section .text
 
-;; size_t strlen(const char* s);
+;; size_t rt_strlen(const char* s);
 ;; ABI:
 ;;   s -> rdi
-global strlen
-strlen:
+global rt_strlen
+rt_strlen:
     ; scan string for '\0' string terminator
     mov rsi, rdi
     mov rcx, -1

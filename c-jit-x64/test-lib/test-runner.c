@@ -28,7 +28,7 @@ static void test_instance(test_filter_t* filter, test_instance_t* instance) {
         print_failure("FAILED while attempting fork. errno=%d\n", errno);
         result = TEST_FAILED;
     } else if(pid == 0) {
-        // This is the child process. Execute the test and then exit the process with 0 (success) or 1 (failure).
+        // This is the child process. Execute the test-lib and then exit the process with 0 (success) or 1 (failure).
         instance->func(instance);
         exit(TEST_PASSED);
     } else {

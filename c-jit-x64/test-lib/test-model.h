@@ -1,5 +1,5 @@
-#ifndef C_JIT_X64_TEST_MODEL_H
-#define C_JIT_X64_TEST_MODEL_H
+#ifndef TEST_MODEL_H
+#define TEST_MODEL_H
 
 typedef enum {
     TEST_PENDING = 0,
@@ -88,4 +88,4 @@ typedef void (*test_instance_callback)(void* context, const test_instance_t* ins
 
 void enumerate_test_instances(test_modules_t* mods, test_instance_callback cb, void* context);
 
-#endif //C_JIT_X64_TEST_MODEL_H
+#endif //TEST_MODEL_H

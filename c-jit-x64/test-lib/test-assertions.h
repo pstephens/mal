@@ -1,5 +1,5 @@
-#ifndef C_JIT_X64_TEST_ASSERTIONS_H
-#define C_JIT_X64_TEST_ASSERTIONS_H
+#ifndef TEST_ASSERTIONS_H
+#define TEST_ASSERTIONS_H
 
 #include <stdbool.h>
 
@@ -17,4 +17,4 @@ void assert_signed(long actual, op_t op, long expected, char* msg, ...);
 
 void assert_unsigned(unsigned long actual, op_t op, unsigned long expected, char* msg, ...);
 
-#endif //C_JIT_X64_TEST_ASSERTIONS_H
+#endif //TEST_ASSERTIONS_H

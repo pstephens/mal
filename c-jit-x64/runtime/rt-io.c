@@ -1,12 +1,12 @@
-#include "io.h"
-#include "stdlib.h"
+#include "rt-io.h"
+#include "rt-stdlib.h"
 
-void put_string(const char* s) {
-    size_t len = strlen(s);
-    syscall_write(0, s, len);
+void rt_put_string(const char* s) {
+    size_t len = rt_strlen(s);
+    rt_syscall_write(0, s, len);
 }
 
-void put_long(long v) {
+void rt_put_long(long v) {
     char buff[21];
     char* s = &buff[20];
     int neg = v < 0 ? 1 : 0;
@@ -28,5 +28,5 @@ void put_long(long v) {
         }
     }
 
-    put_string(s + 1);
+    rt_put_string(s + 1);
 }

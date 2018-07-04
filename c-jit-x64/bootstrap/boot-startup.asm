@@ -1,8 +1,8 @@
 
 section .text
 
-extern start_system_init
-extern syscall_exit
+extern boot_system_init
+extern rt_syscall_exit
 
 global _start
 _start:
@@ -37,10 +37,10 @@ _start:
     mov rdi, r9                      ; rdi is now argc
 
     ; int start_system_init(int argc, char** argv, char** envp, auxv_t* auxv)
-    call start_system_init
+    call boot_system_init
 
     ; exit with the return from start_system_init
     mov rdi, rax
-    call syscall_exit
+    call rt_syscall_exit
 
     ret

@@ -1,5 +1,5 @@
-#ifndef C_JIT_X64_TEST_UTILS_H
-#define C_JIT_X64_TEST_UTILS_H
+#ifndef TEST_UTILS_H
+#define TEST_UTILS_H
 
 #include <stdbool.h>
 #include <stdio.h>
@@ -17,4 +17,4 @@ void print_success(char* msg, ...);
 
 void print_test_modules(test_modules_t* mods);
 
-#endif //C_JIT_X64_TEST_UTILS_H
+#endif //TEST_UTILS_H

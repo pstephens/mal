@@ -68,7 +68,7 @@ static void aggregate_instance_results(test_results_t* results, test_instance_t*
             results->count_pending++;
             break;
         default:
-            fprintf(stderr, "WARN: unexpected test instance state.\n");
+            fprintf(stderr, "WARN: unexpected test-lib instance state.\n");
             break;
     }
 }
