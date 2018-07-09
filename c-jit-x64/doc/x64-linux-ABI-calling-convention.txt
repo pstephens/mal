@@ -1,0 +1,76 @@
+16 64-bit GPRs
+
+rbp, rbx, r12 - r15 belongs to calling function (parent)
+These need to be preserved.
+
+Remaining belong to called (child)
+rax, rcx, rdx, rsp, rsi, rdi, r9 - r11
+
+DF - Direction Flag must be cleared on call.
+
+Stack grows downward.
+
+Size of each arg gets rounded up to eightbytes.
+
+End of the argument area is aligned on 16 bytes.
+
+rsp can be used exclusively... freeing up rbp for other purposes. This would require careful push/pop accounting.(?)
+
+Argument Classes:
+INTEGER - integral types that fit in one register.
+
+SSE - types that fit into vector register
+
+NO_CLASS - used as an initializer algorithm.
+
+MEMORY - types that will be passed and returned in memory via stack.
+
+Classification:
+long, all pointers are in the INTEGER class.
+
+double, float are SSE class.
+
+Structs/Arrays/Unions:
+1. If larger than 4x eightbytes (32 bytes) or contains unaligned fields then -> MEMORY
+3. If exceeds a single eightbyte, then each eightbyte is initially NO_CLASS.
+4. Each field in each eightbyte is considered in pairs
+  (cond 
+    (= CLS-A CLS-B) CLS-A
+    (or (= CLS-A MEMORY) (= CLS-B MEMORY)) MEMORY
+    (or (= CLS-A INTEGER) (= CLS-B INTEGER)) INTEGER
+    true ...)
+5. Post merger cleanup.
+    If one class is MEMORY then whole arg is MEMORY.
+    If size exceeds two 8 bytes then MEMORY.
+
+Registers get assigned left to right
+1. If class is MEMORY then pass arg on the stack.
+2. If class is INTEGER then use next available GPR from -> 
+3. If class is SSE then next vector reg is used: xmm0 - xmm7rdi, rsi, rdx, rcx, r8, r9
+
+_Bool is passed in first byte of arg. Bit 0 is 0 or 1. Bit 1-7 are 0.
+
+If no registers then whole arg gets passed on stack.
+
+Once registers are assigned, then arguments are pushed on stack in right to left order.
+
+For varargs - al used as a hidden arg to specify number of vector registers used. This is an upper bound.
+
+RETURN VALUES:
+1. Classify return type with classification alg
+2. If class is MEMORY then caller provides space and passes a pointer in rdi. On return rax will be the same address as rdi.
+3. If class is INTEGER then next available reg in rax or rdx stores the value.
+
+
+SYSCALLS
+Differences with func calls:
+%rax = syscall
+%rdi -> %rdi
+%rsi -> %rsi
+%rdx -> %rdx
+%rcx -> %r10 **
+%r8 -> %r8
+%r9 -> %r9
+
+Destroys %rcx, %r11
+Return value in %rax. -4095 to -1 is an error which is = -errno

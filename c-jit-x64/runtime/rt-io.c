@@ -1,5 +1,5 @@
 #include "rt-io.h"
-#include "rt-stdlib.h"
+#include "rt-string.h"
 
 void rt_put_string(const char* s) {
     size_t len = rt_strlen(s);

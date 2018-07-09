@@ -4,8 +4,8 @@
 #include "test-assertions.h"
 
 static void match_test_case(const char* pattern, const char* str, bool expected) {
-    assert_bool(wildcard_match(str, pattern), expected,
-                "Assertion Failed: wildcard_match(%s, %s) was not %s.", str, pattern, expected ? "true" : "false");
+    assert_bool_msg(wildcard_match(str, pattern), expected,
+                    "Assertion Failed: wildcard_match(%s, %s) was not %s.", str, pattern, expected ? "true" : "false");
 }
 
 DEFINE_TEST_INSTANCE(match_should_handle_wildcards_properly) {

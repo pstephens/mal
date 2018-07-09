@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include "test-model.h"
 #include "test-runner.h"
+#include "rt-test-module-all.h"
 
 int main(int argc, char** argv) {
 
@@ -9,8 +10,8 @@ int main(int argc, char** argv) {
     lambda_test();
 
     test_modules_t* mods = test_new_modules();
-    ADD_TEST_MODULE(mods, stdlib_heap);
     ADD_TEST_MODULE(mods, test_module_self);
+    rt_register_test_modules(mods);
 
     test_runner(mods, "*", "*");
 

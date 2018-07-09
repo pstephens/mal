@@ -4,6 +4,6 @@
 DEFINE_TEST_INSTANCE(foo) {
 }
 
-DEFINE_TEST_MODULE(stdlib_heap) {
+DEFINE_TEST_MODULE(runtime_heap) {
     ADD_TEST_INSTANCE(foo, NULL);
 }
